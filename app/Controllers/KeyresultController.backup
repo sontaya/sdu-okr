@@ -1,0 +1,240 @@
+<?php
+namespace App\Controllers;
+
+use App\Models\UserModel;
+use App\Models\KeyresultModel;
+use App\Models\KeyResultEntryModel;
+use App\Models\KeyResultFileModel;
+use App\Models\KeyResultTagModel;
+use CodeIgniter\Controller;
+
+
+class KeyresultController extends TemplateController
+{
+
+
+    protected $allowed = ['index'];
+
+    public function __construct()
+    {
+
+    }
+
+    public function index()
+    {
+        // $this->data['title'] = 'My Page Title';
+        // $this->contentTemplate = 'pages/index';
+        // return $this->render();
+
+    }
+
+    public function list()
+    {
+        $model = new KeyresultModel();
+
+        $conditions = [
+            'department_id' => session('department'),
+            'year' => '2568'
+        ];
+
+        $keyresults = $model->getKeyResults([
+            'conditions' => $conditions
+        ]);
+
+        $this->data['keyresults'] = $keyresults;
+
+        $this->data['title'] = 'Key Result List';
+        $this->data['cssSrc'] = ['assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'];
+        $this->data['jsSrc'] = [
+            'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.js',
+            'assets/js/keyresult/list.js'
+        ];
+
+        $this->contentTemplate = 'keyresult/list';
+        return $this->render();
+    }
+
+    public function view($id)
+    {
+        $model = new KeyresultModel();
+
+        $conditions = [
+            'key_result_id' => $id
+        ];
+
+        $results = $model->getKeyResults([
+            'conditions' => $conditions
+        ]);
+
+       $keyresult = $results[0] ?? null;
+
+       // หน่วยงานที่เกี่ยวข้อง
+       $departments = $model->getDepartmentsByKeyResult($id);
+
+
+        $this->data['title'] = 'รายละเอียด Key Result';
+        $this->data['cssSrc'] = ['assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'];
+        $this->data['jsSrc'] = [
+            'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.js',
+            'assets/js/keyresult/view.js'
+        ];
+        $this->data['keyresult'] = $keyresult;
+        $this->data['departments'] = $departments;
+
+        $this->contentTemplate = 'keyresult/view';
+        return $this->render();
+    }
+
+    public function form($id)
+    {
+
+        $this->data['title'] = 'บันทึกรายการข้อมูล';
+        $this->data['cssSrc'] = ['assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'];
+        $this->data['jsSrc'] = [
+            'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.js',
+            'assets/themes/metronic38/assets/plugins/custom/formrepeater/formrepeater.bundle.js',
+            'assets/js/keyresult/form.js'
+        ];
+
+        $this->data['key_result_id'] = $id;
+        $this->contentTemplate = 'keyresult/form';
+        return $this->render();
+    }
+
+    public function saveEntry()
+    {
+        helper(['form']);
+
+        $request = service('request');
+        $entryModel = new KeyResultEntryModel();
+        $fileModel = new KeyResultFileModel();
+        $tagModel = new KeyResultTagModel();
+
+        $data = [
+            'key_result_id' => $request->getPost('key_result_id'),
+            'entry_name' => $request->getPost('entry_name'),
+            'entry_description' => $request->getPost('entry_description'),
+            'entry_status' => $request->getPost('entry_status'),
+            'created_by' => session('user_id'),
+            'created_date' => date('Y-m-d H:i:s'),
+        ];
+
+        $entryId = $entryModel->insert($data);
+
+        // ✅ Save Tags
+        $tags = $request->getPost('entry_tag');
+        if ($tags) {
+            $tagsArray = json_decode($tags, true);
+            foreach ($tagsArray as $tag) {
+                $tagModel->insert([
+                    'entry_id' => $entryId,
+                    'tag_name' => $tag['value'],
+                    'tag_date' => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
+
+        // ✅ สร้างโฟลเดอร์ปลายทาง
+        $entryFolder = WRITEPATH . 'uploads/keyresult/entry_' . $entryId . '/';
+        if (!is_dir($entryFolder)) {
+            mkdir($entryFolder, 0775, true);
+        }
+
+        // ✅ ดึงชื่อไฟล์ที่แนบมาจาก form
+        $attachments = $this->request->getPost('attachments');
+        log_message('debug', '📦 attachments = ' . print_r($attachments, true));
+
+        if ($attachments && is_array($attachments)) {
+            foreach ($attachments as $filename) {
+                $tmpPath = WRITEPATH . 'uploads/tmp/' . $filename;
+                $newPath = $entryFolder . $filename;
+
+                // ✅ ตรวจว่าไฟล์อยู่ใน tmp จริง
+                if (is_file($tmpPath)) {
+                    rename($tmpPath, $newPath); // ย้ายไฟล์
+
+                    // ✅ บันทึกลงตาราง key_result_files
+                    $fileModel->insert([
+                        'entry_id' => $entryId,
+                        'file_name' => $filename,
+                        'file_path' => 'uploads/keyresult/entry_' . $entryId . '/' . $filename,
+                        'uploaded_date' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            }
+        }
+
+
+        return redirect()->to('/keyresult/view/' . $data['key_result_id'])->with('success', 'เพิ่มรายการสำเร็จ');
+    }
+
+    public function editEntry($id)
+    {
+        $entryModel = new KeyResultEntryModel();
+        $fileModel = new KeyResultFileModel();
+        $tagModel = new KeyResultTagModel();
+
+        $entry = $entryModel->find($id);
+        $files = $fileModel->where('entry_id', $id)->findAll();
+        $tags = $tagModel->where('entry_id', $id)->findAll();
+
+        $this->data['entry'] = $entry;
+        $this->data['files'] = $files;
+        $this->data['tags'] = array_column($tags, 'tag_name');
+        $this->data['title'] = 'แก้ไข Key Result Entry';
+        $this->contentTemplate = 'keyresult/form';
+        return $this->render();
+    }
+
+    public function updateEntry($id)
+    {
+        $entryModel = new KeyResultEntryModel();
+        $fileModel = new KeyResultFileModel();
+        $tagModel = new KeyResultTagModel();
+
+        $data = [
+            'entry_name' => $this->request->getPost('entry_name'),
+            'entry_description' => $this->request->getPost('entry_description'),
+            'entry_status' => $this->request->getPost('entry_status')
+        ];
+
+        $entryModel->update($id, $data);
+
+        // ✅ ลบ tag เก่า เพิ่ม tag ใหม่
+        $tagModel->where('entry_id', $id)->delete();
+        $tags = json_decode($this->request->getPost('entry_tag'), true);
+        foreach ($tags as $tag) {
+            $tagModel->insert([
+                'entry_id' => $id,
+                'tag_name' => $tag['value'],
+                'tag_date' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        // ✅ แนบไฟล์ใหม่จาก Dropzone
+        $attachments = $this->request->getPost('attachments');
+        if ($attachments && is_array($attachments)) {
+            $targetPath = WRITEPATH . 'uploads/keyresult/entry_' . $id . '/';
+            if (!is_dir($targetPath)) mkdir($targetPath, 0775, true);
+
+            foreach ($attachments as $filename) {
+                $tmpPath = WRITEPATH . 'uploads/tmp/' . $filename;
+                $newPath = $targetPath . $filename;
+
+                if (is_file($tmpPath)) {
+                    rename($tmpPath, $newPath);
+                    $fileModel->insert([
+                        'entry_id' => $id,
+                        'file_name' => $filename,
+                        'file_path' => 'uploads/keyresult/entry_' . $id . '/' . $filename,
+                        'uploaded_date' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->to('/keyresult/view/' . $id)->with('success', 'แก้ไขเรียบร้อยแล้ว');
+    }
+
+
+}

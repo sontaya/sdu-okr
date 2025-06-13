@@ -1,0 +1,71 @@
+ผมกำลังพัฒนาโปรเจกต์ CodeIgniter 4 ชื่อ `sdu-okr` โดยใช้ Docker (PHP 8.3 + Apache) กับ document root
+ที่ mount จาก `D:/local-wwwroot` และต้องการให้เรียก URL ได้ที่ http://localhost:8083/sdu-okr
+และมี composer + git init แล้ว
+
+ช่วยจำว่า: ผมใช้ Docker, CodeIgniter 4, Apache, composer, git แล้ว mount โฟลเดอร์ sdu-okr ที่ D:/local-wwwroot และอยากให้ URL ไม่ต้องมี /public
+
+
+ผมกำลังพัฒนาโปรเจกต์ CodeIgniter 4 ใช้ theme metronic 8.2.9 ชื่อ `sdu-okr` โดยใช้ Docker (PHP 8.3 + Apache) กับ document root
+ที่ mount จาก `D:/local-wwwroot` เรียก URL ได้ที่ http://localhost:8083/sdu-okr
+ลำดับความสัมพันธ์ของข้อมูล
+    - objective_groups
+        -- objectives
+            --- key_result_templates
+                ---- key_results (key_result_year, sequence_no, name)
+ข้อกำหนดเพิ่มเติม
+    - keyresult แต่ละตัวจะมีหน่วยงานที่เป็นผู้รับผิดชอบ (Leader) และหน่วยงานที่มีส่วนร่วม (CoWorking)
+ภาพรวมองค์ประกอบของระบบ
+    - /keyresult แสดงรายการ keyresult ตามหน่วยงาน
+    - /keyresult/view/(:num)  แสดงข้อมูลภาพรวมของ keyresult และรายการข้อมูล
+    - /keyresult/form/(:num)  หน้าบันทึกรายการข้อมูล (ชื่อรายการข้อมูล, รายละเอียด, คำสำคัญ, สถานะ, เอกสารแนบ )
+
+** ช่วยทำโมดูลในส่วนของการอัพเดทความคืบหน้า โดยแยก Controller ใหม่
+    - ใช้ตารางที่มีอยู่แล้วในการออกแบบหน้าจอและโปรแกรมต่างๆ
+        -- table: key_result_progress
+    - สร้างฟอร์มใหม่โดยปรับจากตัวอย่างที่ส่งให้ (form.php) ซึ่งเป็นฟอร์มบันทึกข้อมูลรายการ keyresult
+
+
+ช่วยออกแบบฐานข้อมูลสำหรับจัดเก็บความคืบหน้าของ keyresult
+    - กำหนดรอบรายงานความคืบหน้าเป็นไตรมาส
+    - Leader สามารถอัพเดทความคืบหน้า ตามไตรมาสได้ โดยสามารถอัพเดทได้หลายครั้งในแต่ละรอบ
+
+
+ตอนนี้กำลังสร้างระบบบันทึกรายการข้อมูล ซึ่งบันทึกลง key_result_entries, key_result_tags
+ปัจจุบันบันทึกได้หมดแล้ว กำลังทำในส่วนของการแก้ไขซึ่งติดปัญหาอยู่ ช่วยดูไฟล์และหาสาเหตุพร้อมแก้ไขได้ไหม
+
+$model = new \App\Models\KeyresultModel();
+
+$limit = 10;
+$page = $this->request->getGet('page') ?? 1;
+$offset = ($page - 1) * $limit;
+
+$conditions = [
+    'department_id' => session('department'),
+    'year' => 2025
+];
+
+$keyword = $this->request->getGet('search');
+
+// ดึงรายการ
+$keyresults = $model->getKeyResults([
+    'conditions' => $conditions,
+    'limit' => $limit,
+    'offset' => $offset,
+    'keyword' => $keyword
+]);
+
+// ดึงจำนวนรวม
+$total = $model->getKeyResults([
+    'conditions' => $conditions,
+    'keyword' => $keyword,
+    'count_only' => true
+]);
+
+$this->data['keyresults'] = $keyresults;
+$this->data['total'] = $total;
+$this->data['perPage'] = $limit;
+$this->data['page'] = $page;
+$this->data['keyword'] = $keyword;
+
+$this->contentTemplate = 'pages/keyresult/list';
+return $this->render();
