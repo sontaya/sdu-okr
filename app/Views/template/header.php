@@ -18,10 +18,31 @@
             <?php endforeach; ?>
         <?php } ?>
 
+
 		<!--end::Vendor Stylesheets-->
 		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
 		<link href="<?= base_url('assets/themes/metronic38/assets/plugins/global/plugins.bundle.css'); ?>" rel="stylesheet" type="text/css" />
 		<link href="<?= base_url('assets/themes/metronic38/assets/css/style.bundle.css'); ?>" rel="stylesheet" type="text/css" />
+		<link href="<?= base_url( 'assets/css/okr-custom.css'); ?>" rel="stylesheet" type="text/css" />
+
+		<!--begin::Extra CSS (from controller)-->
+			<?php if(isset($extra_css) && !empty($extra_css)): ?>
+			<style>
+			<?php if(is_array($extra_css)): ?>
+				<?php foreach($extra_css as $css): ?>
+				<?= $css ?>
+				<?php endforeach; ?>
+			<?php else: ?>
+				<?= $extra_css ?>
+			<?php endif; ?>
+			</style>
+			<?php endif; ?>
+		<!--end::Extra CSS-->
+
+		<!-- CSRF -->
+		<meta name="csrf-token" content="<?= csrf_hash() ?>">
+		<meta name="csrf-token-name" content="<?= csrf_token() ?>">
+
 		<!--end::Global Stylesheets Bundle-->
 		<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 	</head>

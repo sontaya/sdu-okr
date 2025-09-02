@@ -1,0 +1,59 @@
+
+/* ทำให้ Quill Editor container สามารถ resize ได้ */
+#progress_description_editor {
+    resize: vertical;
+    overflow: auto;
+    border: 1px solid #d1d3e0;
+    border-radius: 0.475rem;
+    min-height: 350px;
+}
+
+#challenges_editor,
+#solutions_editor,
+#next_actions_editor {
+    resize: vertical;
+    overflow: auto;
+    border: 1px solid #d1d3e0;
+    border-radius: 0.475rem;
+    min-height: 250px;
+}
+
+/* ปรับแต่ง Quill Editor ให้เข้ากับ container ที่ resize ได้ */
+.ql-container {
+    height: 100% !important;
+}
+
+.ql-editor {
+    height: calc(100% - 42px) !important; /* ลบความสูงของ toolbar */
+    min-height: calc(100% - 42px) !important;
+}
+
+/* ปรับ toolbar ให้ไม่ได้รับผลกระทบ */
+.ql-toolbar {
+    border-bottom: 1px solid #ccc;
+    flex-shrink: 0;
+}
+
+/* เพิ่มรูปแบบ resize handle */
+#progress_description_editor::after,
+#challenges_editor::after,
+#solutions_editor::after,
+#next_actions_editor::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    background: linear-gradient(-45deg, transparent 0%, transparent 40%, #999 40%, #999 50%, transparent 50%, transparent 90%, #999 90%);
+    cursor: nw-resize;
+    pointer-events: none;
+}
+
+/* จัดให้ container เป็น relative position */
+#progress_description_editor,
+#challenges_editor,
+#solutions_editor,
+#next_actions_editor {
+    position: relative;
+}

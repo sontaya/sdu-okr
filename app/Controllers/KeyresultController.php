@@ -6,6 +6,7 @@ use App\Models\KeyresultModel;
 use App\Models\KeyResultEntryModel;
 use App\Models\KeyResultFileModel;
 use App\Models\KeyResultTagModel;
+use App\Models\ProgressModel;
 use CodeIgniter\Controller;
 
 
@@ -19,33 +20,129 @@ class KeyresultController extends TemplateController
          return redirect()->to(base_url('keyresult'));
     }
 
+
     public function list()
     {
         $model = new KeyresultModel();
+        $progressModel = new ProgressModel();
 
         $conditions = [
             'department_id' => session('department'),
             'year' => '2568'
         ];
 
+        // ดึงข้อมูล Key Results ทั้งหมดของหน่วยงาน
         $keyresults = $model->getKeyResults([
             'conditions' => $conditions
         ]);
 
-        $this->data['keyresults'] = $keyresults;
+        $db = \Config\Database::connect();
 
-        $this->data['title'] = 'Key Result List';
-        $this->data['cssSrc'] = ['assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'];
+        // ข้อมูลความคืบหน้าและสิทธิ์สำหรับแต่ละ Key Result
+        foreach ($keyresults as &$keyresult) {
+            $keyResultId = $keyresult['key_result_id'];
+
+            // นับจำนวน entries ที่ published
+            $entriesCount = $db->table('key_result_entries')
+                ->where('key_result_id', $keyResultId)
+                ->where('entry_status', 'published')
+                ->countAllResults();
+            $keyresult['published_entries_count'] = $entriesCount;
+
+            // ดึงความคืบหน้าล่าสุด
+            $latestProgress = $progressModel->getLatestProgress($keyResultId);
+            $keyresult['latest_progress'] = $latestProgress;
+
+            // ปรับการตรวจสอบสิทธิ์ตาม Key Result Role
+            $keyresult['can_view'] = canViewKeyResult($keyResultId);
+            $keyresult['can_report'] = canReportProgress($keyResultId); // Leader + User Permission
+            $keyresult['can_manage_entries'] = canManageEntries($keyResultId); // Leader/CoWorking + User Permission
+
+            // ดึงบทบาทใน Key Result
+            $keyresult['key_result_role'] = getKeyResultRole($keyResultId, session('department'));
+
+            // สิทธิ์เฉพาะการรายงาน (เฉพาะ Leader)
+            if ($keyresult['can_report'] && $latestProgress) {
+                $keyresult['can_edit_report'] = (
+                    $latestProgress['status'] === 'draft' &&
+                    ($latestProgress['created_by'] == session('user_id') || hasRole('Admin'))
+                );
+                $keyresult['can_submit_report'] = (
+                    $latestProgress['status'] === 'draft' &&
+                    $latestProgress['created_by'] == session('user_id')
+                );
+            } else {
+                $keyresult['can_edit_report'] = false;
+                $keyresult['can_submit_report'] = false;
+            }
+
+            // สิทธิ์การอนุมัติ (สำหรับ Approver/Admin + Leader)
+            $keyresult['can_approve'] = false;
+            if ($latestProgress && $latestProgress['status'] === 'submitted') {
+                // ✅ ต้องเป็น Leader + มีสิทธิ์ Approver/Admin + ไม่ใช่คนสร้างรายงาน
+                $keyresult['can_approve'] = (
+                    $keyresult['key_result_role'] === 'Leader' &&
+                    (hasRole('Approver') || hasRole('Admin')) &&
+                    $latestProgress['created_by'] != session('user_id')
+                );
+            }
+
+            // ข้อมูลเพิ่มเติมสำหรับการแสดงผล (เหมือนเดิม)
+            $keyresult['progress_percentage'] = $latestProgress['progress_percentage'] ?? 0;
+            $keyresult['progress_status'] = $latestProgress['status'] ?? 'no_report';
+            $keyresult['last_update'] = $latestProgress['updated_date'] ?? $latestProgress['created_date'] ?? null;
+
+            // ข้อมูลรอบการรายงาน (เหมือนเดิม)
+            if ($latestProgress) {
+                $keyresult['reporting_info'] = [
+                    'quarter' => $latestProgress['quarter_name'] ?? '',
+                    'year' => $latestProgress['year'] ?? '',
+                    'period_text' => ($latestProgress['quarter_name'] ?? '') . ' ' . ($latestProgress['year'] ?? '')
+                ];
+            } else {
+                $keyresult['reporting_info'] = [
+                    'quarter' => '',
+                    'year' => '',
+                    'period_text' => '-'
+                ];
+            }
+        }
+
+        // ข้อมูลสำหรับ View
+        $this->data['keyresults'] = $keyresults;
+        $this->data['user_permissions'] = getDepartmentUserRoles();
+        $this->data['pending_approvals_count'] = getPendingApprovalsCount();
+
+        // นับจำนวนสถิติต่างๆ
+        $stats = [
+            'total_keyresults' => count($keyresults),
+            'can_report_count' => count(array_filter($keyresults, function($kr) { return $kr['can_report']; })),
+            'pending_reports' => count(array_filter($keyresults, function($kr) {
+                return $kr['can_report'] && $kr['progress_status'] === 'draft';
+            })),
+            'submitted_reports' => count(array_filter($keyresults, function($kr) {
+                return $kr['progress_status'] === 'submitted';
+            })),
+            'approved_reports' => count(array_filter($keyresults, function($kr) {
+                return $kr['progress_status'] === 'approved';
+            }))
+        ];
+        $this->data['stats'] = $stats;
+
+        $this->data['title'] = 'My Key Results';
+        $this->data['cssSrc'] = [
+            'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'
+        ];
         $this->data['jsSrc'] = [
             'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.js',
-            'assets/js/keyresult/list.js'
+            'assets/js/keyresult/unified-list.js'
         ];
 
-        $this->contentTemplate = 'keyresult/list';
+        $this->contentTemplate = 'keyresult/unified-list';
         return $this->render();
     }
 
-public function view($id)
+    public function view($id)
     {
         $startTime = microtime(true);
 
@@ -131,6 +228,13 @@ public function view($id)
             'assets/themes/metronic38/assets/plugins/custom/formrepeater/formrepeater.bundle.js',
             'assets/js/keyresult/form.js'
         ];
+
+        // ดึงข้อมูล keyresult
+        if ($id) {
+            $model = new KeyresultModel();
+            $results = $model->getKeyResults(['conditions' => ['key_result_id' => $id]]);
+            $this->data['keyresult'] = $results[0] ?? null;
+        }
 
         $this->data['key_result_id'] = $id;
         $this->contentTemplate = 'keyresult/form';
@@ -225,7 +329,6 @@ public function view($id)
         $files = $fileModel->where('entry_id', $id)->findAll();
         $tags = $tagModel->where('entry_id', $id)->findAll();
 
-        // ✅ ส่งข้อมูลให้ View ในรูปแบบที่ถูกต้อง
         $this->data['entry'] = $entry;
         $this->data['files'] = $files;
         $this->data['tags'] = array_column($tags, 'tag_name'); // แปลงเป็น array ของ tag_name
@@ -239,6 +342,12 @@ public function view($id)
             'assets/themes/metronic38/assets/plugins/custom/formrepeater/formrepeater.bundle.js',
             'assets/js/keyresult/form.js'
         ];
+
+        // ดึงข้อมูล keyresult
+        $keyresultModel = new KeyresultModel();
+        $keyresultResults = $keyresultModel->getKeyResults(['conditions' => ['key_result_id' => $entry['key_result_id']]]);
+        $this->data['keyresult'] = $keyresultResults[0] ?? null;
+
 
         $this->contentTemplate = 'keyresult/form';
         return $this->render();
@@ -373,6 +482,10 @@ public function view($id)
             $tagModel->where('entry_id', $id)->delete();   // ลบ tags
             $entryModel->delete($id);                      // ลบ entry
 
+            // Clear cache หลังจากลบ
+            $model = new KeyresultModel();
+            $model->clearKeyResultsCache($entry['key_result_id']);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'ลบรายการสำเร็จ'
@@ -415,6 +528,49 @@ public function view($id)
             'success' => true,
             'entry' => $entry
         ]);
+    }
+
+    public function viewEntry($id)
+    {
+        $entryModel = new KeyResultEntryModel();
+        $fileModel = new KeyResultFileModel();
+        $tagModel = new KeyResultTagModel();
+
+        // ดึงข้อมูล entry
+        $entry = $entryModel->getEntryWithCreator($id);
+        if (!$entry) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException('ไม่พบรายการข้อมูลที่ต้องการ');
+        }
+
+        // ดึงข้อมูล Key Result
+        $keyresultModel = new KeyresultModel();
+        $keyresultResults = $keyresultModel->getKeyResults([
+            'conditions' => ['key_result_id' => $entry['key_result_id']]
+        ]);
+        $keyresult = $keyresultResults[0] ?? null;
+
+        // ดึงข้อมูลไฟล์แนบ
+        $files = $fileModel->where('entry_id', $id)->findAll();
+
+        // ดึงข้อมูล tags
+        $tags = $tagModel->where('entry_id', $id)->findAll();
+
+        // ส่งข้อมูลให้ View
+        $this->data['entry'] = $entry;
+        $this->data['keyresult'] = $keyresult;
+        $this->data['files'] = $files;
+        $this->data['tags'] = array_column($tags, 'tag_name');
+        $this->data['is_view'] = true; // บอกว่าเป็นโหมดดู
+
+        $this->data['title'] = 'รายละเอียด ' . $entry['entry_name'];
+        $this->data['cssSrc'] = ['assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'];
+        $this->data['jsSrc'] = [
+            'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.js',
+            'assets/js/keyresult/view-entry.js'
+        ];
+
+        $this->contentTemplate = 'keyresult/view-entry';
+        return $this->render();
     }
 
 }

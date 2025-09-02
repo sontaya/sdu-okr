@@ -1,34 +1,89 @@
 <?php
+namespace Config;
 
 use CodeIgniter\Router\RouteCollection;
 
 /**
  * @var RouteCollection $routes
  */
+
+$routes = Services::routes();
+
+if (is_file(SYSTEMPATH . 'Config/Routes.php')) {
+    require SYSTEMPATH . 'Config/Routes.php';
+}
+
+
 $routes->get('/', 'Home::index');
+$routes->get('/demo', 'DemoController::index');
 $routes->get('login', 'AuthController::index');
 $routes->post('auth/login', 'AuthController::login');
 $routes->get('auth/logout', 'AuthController::logout');
 
 
-$routes->get('main', 'MainController::index');
-// $routes->get('dashboard', 'MainController::dashboard');
+// Admin Routes - เฉพาะผู้ที่มีสิทธิ์ Admin
+$routes->group('admin', function($routes) {
+    $routes->get('/', 'AdminController::dashboard');
+    $routes->get('dashboard', 'AdminController::dashboard');
+    $routes->get('manage-permissions', 'AdminController::managePermissions');
+    $routes->get('system-stats', 'AdminController::systemStats');
 
-$routes->group('keyresult', function ($routes) {
+    // API endpoints
+    $routes->post('grant-role', 'AdminController::grantRole');
+    $routes->post('revoke-role', 'AdminController::revokeRole');
+    $routes->get('user-roles/(:num)', 'AdminController::getUserRoles/$1');
+});
+
+
+$routes->get('/', 'DashboardController::index');
+$routes->get('dashboard', 'DashboardController::index');
+
+$routes->group('keyresult', function($routes) {
     $routes->get('/', 'KeyresultController::list');
+    $routes->get('list', 'KeyresultController::list');
     $routes->get('view/(:num)', 'KeyresultController::view/$1');
     $routes->get('form/(:num)', 'KeyresultController::form/$1');
-    $routes->post('save-entry', 'KeyresultController::saveEntry');
     $routes->get('edit-entry/(:num)', 'KeyresultController::editEntry/$1');
+    $routes->get('view-entry/(:num)', 'KeyresultController::viewEntry/$1');
+
+    $routes->post('save-entry', 'KeyresultController::saveEntry');
     $routes->post('update-entry/(:num)', 'KeyresultController::updateEntry/$1');
-    $routes->post('delete-file/(:num)', 'KeyresultController::deleteFile/$1'); // เปลี่ยนเป็น POST
-    $routes->post('delete-entry/(:num)', 'KeyresultController::deleteEntry/$1');
-    $routes->get('get-entry-details/(:num)', 'KeyresultController::getEntryDetails/$1');
+    $routes->delete('delete-entry/(:num)', 'KeyresultController::deleteEntry/$1');
+    $routes->delete('delete-file/(:num)', 'KeyresultController::deleteFile/$1');
+    $routes->get('entry-details/(:num)', 'KeyresultController::getEntryDetails/$1');
 });
 
 $routes->post('upload/temp', 'UploadController::uploadTemp');
 $routes->post('upload/remove-temp', 'UploadController::removeTemp');
 
+
+// Progress Routes
+$routes->group('progress', function($routes) {
+    $routes->get('/', 'ProgressController::list');
+    $routes->get('list', 'ProgressController::list');
+    $routes->get('view/(:num)', 'ProgressController::view/$1');
+    $routes->get('view/(:num)/(:num)', 'ProgressController::view/$1/$2');
+
+    // Form routes - ตรวจสอบสิทธิ์ใน Controller
+    $routes->get('form/(:num)', 'ProgressController::form/$1');
+    $routes->get('form/(:num)/(:num)', 'ProgressController::form/$1/$2');
+    $routes->get('form/(:num)/(:num)/(:num)', 'ProgressController::form/$1/$2/$3');
+
+    // Action routes
+    $routes->post('save', 'ProgressController::save');
+    $routes->post('update/(:num)', 'ProgressController::update/$1');
+    $routes->post('submit/(:num)', 'ProgressController::submit/$1');
+    $routes->post('approve/(:num)', 'ProgressController::approve/$1');
+    $routes->post('reject/(:num)', 'ProgressController::reject/$1');
+    $routes->delete('delete/(:num)', 'ProgressController::delete/$1');
+
+    // Approval management
+    $routes->get('pending-approvals', 'ProgressController::pendingApprovals');
+    $routes->get('progress-details/(:num)', 'ProgressController::getProgressDetails/$1');
+
+    // Comments
+    $routes->post('add-comment', 'ProgressController::addComment');
+});
 
 
 // Dashboard Routes

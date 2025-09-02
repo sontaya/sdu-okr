@@ -116,3 +116,4 @@ if(!function_exists('get_ldap_profile'))
       return null;
     }
 }
+

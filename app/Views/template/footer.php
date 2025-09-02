@@ -22,3 +22,35 @@
                 <script src="<?= base_url($js) ?>"></script>
             <?php endforeach; ?>
         <?php } ?>
+
+
+
+		<!--begin::Extra JavaScript (from controller)-->
+		<?php if(isset($extra_js) && !empty($extra_js)): ?>
+			<script>
+				$(document).ready(function() {
+					<?php if(is_array($extra_js)): ?>
+						<?php foreach($extra_js as $js): ?>
+					<?= $js ?>
+						<?php endforeach; ?>
+					<?php else: ?>
+					<?= $extra_js ?>
+					<?php endif; ?>
+				});
+			</script>
+		<?php endif; ?>
+		<!--end::Extra JavaScript-->
+
+		<!--begin::Raw JavaScript (executed without document ready wrapper)-->
+		<?php if(isset($raw_js) && !empty($raw_js)): ?>
+		<script>
+			<?php if(is_array($raw_js)): ?>
+				<?php foreach($raw_js as $js): ?>
+			<?= $js ?>
+				<?php endforeach; ?>
+			<?php else: ?>
+			<?= $raw_js ?>
+			<?php endif; ?>
+			</script>
+		<?php endif; ?>
+		<!--end::Raw JavaScript-->

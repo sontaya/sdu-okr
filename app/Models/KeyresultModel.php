@@ -120,6 +120,7 @@ class KeyresultModel extends Model
                 , concat(obj.sequence_no,".",kt.sequence_no," ", kt.name) AS key_result_template_name
                 ,kr.id AS key_result_id, kr.key_result_year, kr.sequence_no AS key_result_sequence
                 , concat(kr.sequence_no,". ", kr.name) AS key_result_name
+                , kr.target_value, kr.target_unit
                 , kd.role as key_result_dep_role
             ')
             ->join('objectives obj', 'og.id = obj.objective_group_id')

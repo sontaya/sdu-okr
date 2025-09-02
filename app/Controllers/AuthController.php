@@ -24,7 +24,6 @@ class AuthController extends BaseController
 
     public function login_prod()
     {
-
         $username = $this->request->getPost('login_user');
         $password = $this->request->getPost('login_password');
 
@@ -46,8 +45,11 @@ class AuthController extends BaseController
                     'full_name' => $user['full_name'],
                     'role' => $user['role'],
                     'department' => $user['department_id'],
-                    'user_id' => $user['id']
+                    'user_id' => $user['id']  // เปลี่ยนจาก string เป็น int
                 ]);
+
+                // เพิ่มการ initialize user permissions
+                $this->initializeUserPermissions($user['id'], $user['department_id']);
 
                 $ip = get_client_ip();
                 $now = date('Y-m-d H:i:s');
@@ -72,28 +74,70 @@ class AuthController extends BaseController
         }
     }
 
+
     public function login()
     {
-
         $username = $this->request->getPost('login_user');
         $password = $this->request->getPost('login_password');
 
-        // ตั้งค่า session
-        $session = session();
-        $session->set([
-            'isLoggedIn' => true,
-            'uid' =>'sontaya_yam',
-            'full_name' => 'Sontaya Yamdach',
-            'role' => 'Admin',
-            'department' => 18,
-            'user_id' => 'sontaya_yam'
+        // ดึงข้อมูล user จาก database แทนการ hardcode
+        $userModel = new UserModel();
+        $user = $userModel->where('uid', $username)->first();
+
+        if ($user) {
+            // ตั้งค่า session
+            $session = session();
+            $session->set([
+                'isLoggedIn' => true,
+                'uid' => $user['uid'],
+                'full_name' => $user['full_name'],
+                'role' => $user['role'],
+                'department' => $user['department_id'],
+                'user_id' => $user['id']  // ใช้ integer ID แทน string
+            ]);
+
+            // เพิ่มการ initialize user permissions
+            $this->initializeUserPermissions($user['id'], $user['department_id']);
+
+            $ip = get_client_ip();
+            $now = date('Y-m-d H:i:s');
+
+            $userModel->update($user['id'], [
+                'lasted_login' => $now,
+                'lasted_ip' => $ip
+            ]);
+
+            return $this->response->setJSON(['status' => 'success']);
+        } else {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'ไม่พบผู้ใช้งาน'
+            ]);
+        }
+    }
+
+    // initialize user permissions
+    private function initializeUserPermissions($userId, $departmentId)
+    {
+        $db = \Config\Database::connect();
+
+        // ดึงสิทธิ์ทั้งหมดของผู้ใช้ในหน่วยงาน
+        $permissions = $db->table('department_user_roles')
+            ->select('role_type')
+            ->where('user_id', $userId)
+            ->where('department_id', $departmentId)
+            ->get()
+            ->getResultArray();
+
+        $roles = array_column($permissions, 'role_type');
+
+        // เก็บข้อมูลสิทธิ์ใน session
+        session()->set([
+            'user_roles' => $roles,
+            'is_admin' => in_array('Admin', $roles),
+            'is_approver' => in_array('Approver', $roles),
+            'is_reporter' => in_array('Reporter', $roles)
         ]);
-
-        $ip = get_client_ip();
-        $now = date('Y-m-d H:i:s');
-
-        return $this->response->setJSON(['status' => 'success']);
-
     }
 
     public function logout()

@@ -1,3 +1,104 @@
+<!--begin::Breadcrumb-->
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-6">
+    <!--begin::Path-->
+    <div class="d-flex align-items-center flex-wrap">
+        <a href="<?= base_url('keyresult/list') ?>" class="text-muted text-hover-primary fw-semibold fs-7">
+            <i class="ki-outline ki-home fs-6 me-1"></i>
+            My Key Results
+        </a>
+        <i class="ki-outline ki-right fs-8 text-gray-400 mx-2"></i>
+        <a href="<?= base_url('keyresult/view/' . ($entry['key_result_id'] ?? $key_result_id ?? '')) ?>" class="text-muted text-hover-primary fw-semibold fs-7">
+            View KR
+        </a>
+        <i class="ki-outline ki-right fs-8 text-gray-400 mx-2"></i>
+        <span class="text-gray-800 fw-bold fs-7">
+            <?= isset($is_edit) && $is_edit ? 'Edit Entry' : 'Add Entry' ?>
+        </span>
+    </div>
+    <!--end::Path-->
+
+</div>
+<!--end::Breadcrumb-->
+
+<!--begin::KR Header Card-->
+    <div class="card mb-6 mb-xl-9">
+        <div class="card-body pt-9 pb-0">
+            <!--begin::Details-->
+            <div class="d-flex flex-wrap flex-sm-nowrap mb-6">
+                <!--begin::Image-->
+                <div class="d-flex flex-center flex-shrink-0 bg-light rounded w-100px h-100px w-lg-150px h-lg-150px me-7 mb-4">
+                    <?php
+                    // ตรวจสอบ og_id และกำหนดภาพ badge ที่เหมาะสม
+                    $og_id = isset($keyresult['og_id']) ? (int)$keyresult['og_id'] : 1;
+                    // ตรวจสอบว่า og_id อยู่ในช่วง 1-5 หรือไม่
+                    if ($og_id < 1 || $og_id > 5) {
+                        $og_id = 1; // ใช้ค่าเริ่มต้นเป็น 1 หาก og_id ไม่อยู่ในช่วงที่กำหนด
+                    }
+                    $badge_image = base_url('assets/images/badge-goal' . $og_id . '.png');
+                    ?>
+                    <img class="mw-150px mw-lg-100px" src="<?= $badge_image ?>" alt="Goal Badge" style="object-fit: contain;" />
+                </div>
+                <!--end::Image-->
+                <!--begin::Wrapper-->
+                <div class="flex-grow-1">
+                    <!--begin::KR Heading-->
+                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                        <!--begin::Details-->
+                        <div class="d-flex flex-column">
+                            <!--begin::Goal Badge-->
+                            <?php $goal_class = 'goal-badge-' . $og_id; ?>
+                            <div class="mb-2">
+                                <span class="badge goal-badge <?= $goal_class ?> fs-6">
+                                    <?= esc($keyresult['og_name'] ?? 'Goal Name') ?>
+                                </span>
+                            </div>
+                            <!--end::Goal Badge-->
+
+                            <!--begin::Objective -->
+                            <div class="fs-7 fw-semibold obj-color-<?= $og_id ?> mb-2">
+                                Obj: <?= esc($keyresult['objective_name'] ?? 'Objective Name') ?>
+                            </div>
+                            <!--end::Objective-->
+
+                            <!--begin::Title-->
+                            <h1 class="text-gray-600 text-hover-goal-<?= $og_id ?> fs-7 fw-bold mb-2">
+                            KR: <?= esc($keyresult['key_result_name'] ?? 'Key Result Name') ?>
+                            </h1>
+                            <!--end::Title-->
+
+                            <!--begin::Form Action Indicator-->
+                            <div class="d-flex align-items-center">
+                                <i class="ki-outline <?= isset($is_edit) && $is_edit ? 'ki-pencil' : 'ki-plus' ?> fs-6 text-primary me-2"></i>
+                                <span class="text-primary fw-semibold fs-7">
+                                    <?= isset($is_edit) && $is_edit ? 'แก้ไขรายการข้อมูล' : 'เพิ่มรายการข้อมูลใหม่' ?>
+                                </span>
+                            </div>
+                            <!--end::Form Action Indicator-->
+                        </div>
+                        <!--end::Details-->
+                    </div>
+                    <!--end::KR Heading-->
+                </div>
+                <!--end::Wrapper-->
+            </div>
+            <!--end::Details-->
+            <div class="separator"></div>
+            <!--begin::Nav-->
+            <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+                <!--begin::Nav item-->
+                <li class="nav-item">
+                    <a class="nav-link text-active-primary py-5 me-6 active" href="#">
+                        <?= isset($is_edit) && $is_edit ? 'แก้ไขข้อมูล' : 'เพิ่มข้อมูลใหม่' ?>
+                    </a>
+                </li>
+                <!--end::Nav item-->
+            </ul>
+            <!--end::Nav-->
+        </div>
+    </div>
+<!--end::KR Header Card-->
+
+
 <!--begin::Form-->
         <form id="kt_keyresult_entries_form" class="form d-flex flex-column flex-lg-row" data-kt-redirect=""
               action="<?= isset($is_edit) && $is_edit ? base_url('keyresult/update-entry/' . $entry['id']) : base_url('keyresult/save-entry') ?>"

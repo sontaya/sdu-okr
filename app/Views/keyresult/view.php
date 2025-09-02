@@ -1,4 +1,23 @@
-<div class="card mb-6 mb-xl-9">
+<!--begin::Breadcrumb-->
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-6">
+    <!--begin::Path-->
+    <div class="d-flex align-items-center flex-wrap">
+        <a href="<?= base_url('keyresult/list') ?>" class="text-muted text-hover-primary fw-semibold fs-7">
+            <i class="ki-outline ki-home fs-6 me-1"></i>
+            My Key Results
+        </a>
+        <i class="ki-outline ki-right fs-8 text-gray-400 mx-2"></i>
+        <span class="text-gray-800 fw-bold fs-7">
+            View KR
+        </span>
+    </div>
+    <!--end::Path-->
+
+</div>
+<!--end::Breadcrumb-->
+
+
+        <div class="card mb-6 mb-xl-9">
             <div class="card-body pt-9 pb-0">
                 <!--begin::Details-->
                 <div class="d-flex flex-wrap flex-sm-nowrap mb-6">
@@ -18,41 +37,31 @@
                     <!--end::Image-->
                     <!--begin::Wrapper-->
                     <div class="flex-grow-1">
-                        <!--begin::Head-->
+                        <!--begin::KR Heading-->
                         <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
                             <!--begin::Details-->
                             <div class="d-flex flex-column">
+
                                 <!--begin::Goal Badge-->
-                                <?php
-                                // กำหนดสีตาม og_id
-                                $goal_colors = [
-                                    1 => '#F4B400', // Goal 1 - Yellow
-                                    2 => '#2196F3', // Goal 2 - Blue
-                                    3 => '#D32F2F', // Goal 3 - Red
-                                    4 => '#388E3C', // Goal 4 - Green
-                                    5 => '#7B1FA2'  // Goal 5 - Purple
-                                ];
-                                $goal_color = isset($goal_colors[$og_id]) ? $goal_colors[$og_id] : $goal_colors[1];
-                                ?>
-                                <div class="mb-3">
-                                    <span class="badge fw-bold px-4 py-2 fs-6" style="background-color: <?= $goal_color ?>; color: white; border-radius: 20px;">
+                                <?php $goal_class = 'goal-badge-' . $og_id; ?>
+                                <div class="mb-2">
+                                    <span class="badge goal-badge <?= $goal_class ?> fs-6">
                                         <?= esc($keyresult['og_name']) ?>
                                     </span>
                                 </div>
                                 <!--end::Goal Badge-->
-                                <!--begin::Status-->
-                                <div class="d-flex align-items-center mb-1">
-                                    <a href="#" class="text-gray-800 text-hover-primary fs-2 fw-bold me-3"><?= esc($keyresult['key_result_name']) ?></a>
-                                    <span class="badge badge-light-success me-auto">In Progress</span>
-                                </div>
-                                <!--end::Status-->
-                                <!--begin::Description-->
-                                <div class="d-flex flex-wrap fw-semibold mb-4 fs-5 text-gray-500">
-                                    <span class="text-gray-600"><?= esc($keyresult['objective_name']) ?></span>
-                                    <span class="text-gray-400 mx-2">|</span>
-                                    <span class="text-gray-500"><?= esc($keyresult['key_result_template_name']) ?></span>
+
+                                <!--begin::Objective -->
+                                <div class="d-flex flex-wrap fw-bold mb-2 fs-5 ">
+                                    <span class="text-gray-800 obj-color-<?= $og_id ?>">Obj: <?= esc($keyresult['objective_name']) ?></span>
                                 </div>
                                 <!--end::Description-->
+
+                                <!--begin::Title-->
+                                <h1 class="text-gray-800 text-hover-primary fs-5 fw-bold mb-2">
+                                   KR: <?= esc($keyresult['key_result_name']) ?>
+                                </h1>
+                                <!--end::Title-->
                             </div>
                             <!--end::Details-->
                             <!--begin::Actions-->
@@ -82,7 +91,7 @@
                             </div>
                             <!--end::Actions-->
                         </div>
-                        <!--end::Head-->
+                        <!--end::KR Heading-->
                         <!--begin::Info-->
                         <div class="d-flex flex-wrap justify-content-start">
                             <!--begin::Stats-->
@@ -292,7 +301,7 @@
                                         <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-150px py-4" data-kt-menu="true">
                                             <!--begin::Menu item - แสดงรายละเอียด-->
                                             <div class="menu-item px-3">
-                                                <a href="#" class="menu-link px-3 view-entry-btn" data-entry-id="<?= $entry['id'] ?>">
+                                                <a href="<?= base_url('keyresult/view-entry/' . $entry['id']) ?>" class="menu-link px-3">
                                                     <i class="ki-outline ki-eye fs-5 me-2"></i>แสดงรายละเอียด
                                                 </a>
                                             </div>

@@ -1,0 +1,40 @@
+/* เพิ่มใน CSS หรือในส่วน <style> ของหน้า progress/view.php */
+
+/* Timeline content styling */
+.timeline-content .text-gray-600 {
+    line-height: 1.6;
+    max-height: 150px;
+    overflow: hidden;
+    position: relative;
+}
+
+.timeline-content .text-gray-600.expanded {
+    max-height: none;
+}
+
+/* Badge styling for entries */
+.badge.badge-light-info {
+    background-color: rgba(33, 150, 243, 0.1);
+    color: #2196F3;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+/* Collapse details styling */
+.collapse .text-gray-600 {
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #e9ecef;
+}
+
+.collapse .text-warning + .text-gray-600 {
+    border-left-color: #ffc107;
+}
+
+.collapse .text-info + .text-gray-600 {
+    border-left-color: #17a2b8;
+}
+
+.collapse .text-primary + .text-gray-600 {
+    border-left-color: #007bff;
+}

@@ -13,23 +13,41 @@ class TemplateController extends BaseController
     protected $contentTemplate;
     protected $allowed = [];
 
-    public function __construct()
-    {
-        // ✅ ลบโค้ดออกหมด เพราะ $this->request ยังไม่พร้อม
-    }
-
     public function initController($request, $response, $logger)
     {
         // ✅ เรียก parent initController ก่อน
         parent::initController($request, $response, $logger);
 
-        // ✅ ย้ายโค้ดมาไว้ที่นี่แทน เพราะ $this->request พร้อมใช้แล้ว
+        helper(['permission']);
+
         if (session('isLoggedIn')) {
             $this->globalData = [
                 'timestamp' => date('Y-m-d H:i:s'),
                 'client_ip' => $this->request->getIPAddress(),
                 'user_id' => session('user_id'),
             ];
+
+
+            // ข้อมูลสิทธิ์ผู้ใช้สำหรับ template
+            $this->data['current_user'] = [
+                'uid' => session('uid'),
+                'full_name' => session('full_name'),
+                'department' => session('department'),
+                'is_admin' => session('is_admin') ?? false,
+                'is_approver' => session('is_approver') ?? false,
+                'is_reporter' => session('is_reporter') ?? false,
+                'user_roles' => session('user_roles') ?? []
+            ];
+
+            // ตรวจสอบว่าผู้ใช้ยังมีอยู่ในระบบหรือไม่
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->find(session('user_id'));
+
+            if (!$user) {
+                session()->destroy();
+                redirect()->to('/login')->send();
+                exit;
+            }
         }
 
         $method = service('router')->methodName();
@@ -50,19 +68,13 @@ class TemplateController extends BaseController
 
     public function setAutoActiveMenu()
     {
-        log_message('error', '🔴 DEBUG: setAutoActiveMenu() START');
-
         $router = service('router');
         $controllerName = $router->controllerName();
         $methodName = $router->methodName();
 
         // ✅ แก้ไข: ลบ backslash ข้างหน้าออก
         $controllerName = ltrim($controllerName, '\\');
-
         $currentRoute = $controllerName . '::' . $methodName;
-        log_message('error', "🔴 DEBUG: Original controller = " . $router->controllerName());
-        log_message('error', "🔴 DEBUG: Fixed controller = $controllerName");
-        log_message('error', "🔴 DEBUG: Current route = $currentRoute");
 
         // กำหนด menu mapping แบบละเอียด (Controller + Method)
         $detailedMenuMapping = [
@@ -74,55 +86,52 @@ class TemplateController extends BaseController
             'App\Controllers\KeyresultController::view' => 'keyresult-list',
             'App\Controllers\KeyresultController::form' => 'keyresult-list',
             'App\Controllers\KeyresultController::editEntry' => 'keyresult-list',
+            'App\Controllers\ProgressController::list' => 'progress-list',
+            'App\Controllers\MainController::index' => 'dashboard-executive',
+            'App\Controllers\MainController::dashboard' => 'dashboard-executive',
         ];
 
         if (isset($detailedMenuMapping[$currentRoute])) {
             $menuCode = $detailedMenuMapping[$currentRoute];
-            log_message('error', "🔴 DEBUG: ✅ Found exact mapping, setting menu to: $menuCode");
             $this->setActiveMenu($menuCode);
         } else {
-            // Fallback: ใช้ Controller-based mapping (เดิม)
+            // Fallback: ใช้ Controller-based mapping
             $controllerMenuMapping = [
                 'App\Controllers\DashboardController' => 'dashboard-executive',
                 'App\Controllers\KeyresultController' => 'keyresult-list',
+                'App\Controllers\MainController' => 'dashboard-executive',
             ];
 
             if (isset($controllerMenuMapping[$controllerName])) {
                 $menuCode = $controllerMenuMapping[$controllerName];
-                log_message('error', "🔴 DEBUG: ⚠️ Using fallback, setting menu to: $menuCode");
                 $this->setActiveMenu($menuCode);
-            } else {
-                log_message('error', "🔴 DEBUG: ❌ No mapping found for controller: $controllerName");
             }
         }
-
-        // ✅ ตรวจสอบผลลัพธ์หลังจาก setActiveMenu
-        $activeMenu = session('menu.active');
-        log_message('error', "🔴 DEBUG: Final active menu = '$activeMenu'");
-
-        log_message('error', '🔴 DEBUG: setAutoActiveMenu() END');
     }
 
     public function render()
     {
         // ✅ Debug ขั้นที่ 1 - ตรวจสอบว่า render() ถูกเรียกหรือไม่
-        log_message('error',"🟢 DEBUG: render() method called");
+        log_message('error',"🔴 DEBUG: render() method called");
 
         // ✅ Debug ขั้นที่ 2 - ตรวจสอบ router information
         $router = service('router');
         $controllerName = $router->controllerName();
         $methodName = $router->methodName();
-        log_message('error',"🟢 DEBUG: Controller = $controllerName");
-        log_message('error',"🟢 DEBUG: Method = $methodName");
+        log_message('error',"🔴 DEBUG: Controller = $controllerName");
+        log_message('error',"🔴 DEBUG: Method = $methodName");
 
         // ✅ เรียก setAutoActiveMenu ก่อน render
-        log_message('error',"🟢 DEBUG: About to call setAutoActiveMenu()");
+        log_message('error',"🔴 DEBUG: About to call setAutoActiveMenu()");
         $this->setAutoActiveMenu();
-        log_message('error',"🟢 DEBUG: setAutoActiveMenu() completed");
+        log_message('error',"🔴 DEBUG: setAutoActiveMenu() completed");
+
+        // ตั้งค่าข้อมูลสิทธิ์ก่อน render
+        $this->setPermissionData();
 
         // ✅ Debug ขั้นที่ 3 - ตรวจสอบ session
         $activeMenu = session('menu.active');
-        log_message('error',"🟢 DEBUG: Active menu from session = '$activeMenu'");
+        log_message('error',"🔴 DEBUG: Active menu from session = '$activeMenu'");
 
         // Load header, content, and footer views into the $aTemplate array
         $this->aTemplate['header'] = view('template/header', $this->data);
@@ -137,6 +146,9 @@ class TemplateController extends BaseController
 
     public function renderNoMenu()
     {
+        // ตั้งค่าข้อมูลสิทธิ์ก่อน render
+        $this->setPermissionData();
+
         // Load header, content, and footer views into the $aTemplate array
         $this->aTemplate['header'] = view('template/header', $this->data);
         $this->aTemplate['content'] = view($this->contentTemplate, $this->data);
@@ -145,4 +157,58 @@ class TemplateController extends BaseController
         // Render the template without a menu
         return view('template/index-nomenu', $this->aTemplate);
     }
+
+    // methods สำหรับตรวจสอบสิทธิ์
+    protected function requireRole($role, $message = 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้')
+    {
+        if (!hasRole($role)) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => $message]);
+            }
+            session()->setFlashdata('error', $message);
+            return redirect()->back();
+        }
+        return null;
+    }
+
+
+    protected function requireAdmin($message = 'คุณไม่มีสิทธิ์ผู้ดูแลระบบ')
+    {
+        return $this->requireRole('Admin', $message);
+    }
+
+    protected function requireApprover($message = 'คุณไม่มีสิทธิ์อนุมัติ')
+    {
+        if (!hasRole('Approver') && !hasRole('Admin')) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => $message]);
+            }
+            session()->setFlashdata('error', $message);
+            return redirect()->back();
+        }
+        return null;
+    }
+
+    protected function requireReporter($message = 'คุณไม่มีสิทธิ์รายงาน')
+    {
+        if (!hasRole('Reporter') && !hasRole('Approver') && !hasRole('Admin')) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => $message]);
+            }
+            session()->setFlashdata('error', $message);
+            return redirect()->back();
+        }
+        return null;
+    }
+
+    // helper method สำหรับตรวจสอบสิทธิ์ใน view
+    protected function setPermissionData()
+    {
+        $this->data['permissions'] = [
+            'can_report' => hasRole('Reporter') || hasRole('Approver') || hasRole('Admin'),
+            'can_approve' => hasRole('Approver') || hasRole('Admin'),
+            'is_admin' => hasRole('Admin')
+        ];
+    }
+
 }

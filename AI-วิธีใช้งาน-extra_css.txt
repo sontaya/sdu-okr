@@ -1,0 +1,43 @@
+ตัวอย่างการปรับแต่งไฟล์ template สำหรับรองรับ Data Variables:สมบูรณ์แล้วครับ ตอนนี้คุณมี Custom Template System ที่รองรับ Data Variables สำหรับ inline CSS/JS:
+
+## สิ่งที่ได้รับ:
+
+1. **template/header.php** - รองรับ `$extra_css`
+2. **template/footer.php** - รองรับ `$extra_js` และ `$raw_js`
+3. **ตัวอย่างการใช้งาน** - ครบทุก pattern
+
+## วิธีใช้งาน:
+
+### สำหรับ CSS เล็กน้อย:
+```php
+$this->data['extra_css'] = '.my-custom-style { color: red; }';
+// หรือ
+$this->data['extra_css'] = [
+    '.style1 { ... }',
+    '.style2 { ... }'
+];
+```
+
+### สำหรับ JS ที่ต้อง Document Ready:
+```php
+$this->data['extra_js'] = [
+    '$(".btn").click(function() { alert("Hello"); });',
+    'initCustomFeature();'
+];
+```
+
+### สำหรับ JS ที่ไม่ต้อง Wrapper (Global Functions):
+```php
+$this->data['raw_js'] = [
+    'function myGlobalFunction() { return true; }',
+    'const CONFIG = { timeout: 5000 };'
+];
+```
+
+## ข้อดี:
+- ใช้ระบบ template เดิม
+- CSS/JS อยู่ในตำแหน่งที่ถูกต้อง
+- รองรับทั้ง string และ array
+- ไม่ต้องสร้างไฟล์เพิ่ม สำหรับ code สั้นๆ
+
+ระบบนี้จะช่วยแก้ปัญหาที่คุณต้องการได้ดีครับ สำหรับ JavaScript/CSS นิดหน่อยที่ไม่คุ้มค่าสร้างไฟล์ใหม่
