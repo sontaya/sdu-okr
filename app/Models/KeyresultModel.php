@@ -14,46 +14,15 @@ class KeyresultModel extends Model
 
     public function getKeyResults($params = [])
     {
-        // ✅ 1. สร้าง cache key ที่ unique ตาม parameters
-        $cacheKey = $this->generateCacheKey($params);
-
-        // ✅ 2. ลองดึงจาก cache ก่อน
-        $cache = \Config\Services::cache();
-        if ($cachedData = $cache->get($cacheKey)) {
-            log_message('info', "Cache HIT for key: {$cacheKey}");
-            return $cachedData;
-        }
-
-        log_message('info', "Cache MISS for key: {$cacheKey}");
-
-        // ✅ 3. ถ้าไม่มีใน cache ให้ query database
         $results = $this->executeQuery($params);
-
-        // ✅ 4. เก็บผลลัพธ์ใน cache (TTL แตกต่างกันตามประเภทข้อมูล)
-        $ttl = $this->getCacheTTL($params);
-        $cache->save($cacheKey, $results, $ttl);
-
-        log_message('info', "Cached data for key: {$cacheKey} (TTL: {$ttl}s)");
-
         return $results;
     }
 
     public function getKeyResultsDebug($params = [])
     {
-        $cacheKey = $this->generateCacheKey($params);
-        $cache = \Config\Services::cache();
-
         echo "<div style='background:yellow;padding:10px;'>";
-        echo "🔑 Cache Key: {$cacheKey}<br>";
 
-        if ($cachedData = $cache->get($cacheKey)) {
-            echo "✅ Cache HIT - ดึงจาก cache<br>";
-            echo "⏱️ เวลาที่ใช้: ~5ms<br>";
-            echo "</div>";
-            return $cachedData;
-        }
-
-        echo "❌ Cache MISS - Query database<br>";
+        echo "❌ Cache MISS - Query database (Caching Disabled)<br>";
         $start = microtime(true);
         $results = $this->executeQuery($params);
         $end = microtime(true);
@@ -61,50 +30,9 @@ class KeyresultModel extends Model
         $queryTime = ($end - $start) * 1000;
         echo "⏱️ Query เวลา: {$queryTime}ms<br>";
 
-        $cache->save($cacheKey, $results, $this->getCacheTTL($params));
-        echo "💾 บันทึกใน cache แล้ว<br>";
         echo "</div>";
 
         return $results;
-    }
-
-    /**
-     * ✅ สร้าง cache key ที่ unique
-     */
-    private function generateCacheKey($params)
-    {
-        // เรียงลำดับ params เพื่อให้ได้ key เดียวกัน
-        ksort($params);
-
-        // ใช้ MD5 เพื่อให้ key สั้นและ clean
-        $keyString = 'keyresults_' . md5(serialize($params));
-
-        // เพิ่ม version เพื่อ invalidate cache เมื่อมีการเปลี่ยนแปลง structure
-        return $keyString . '_v1';
-    }
-
-    /**
-     * ✅ กำหนด TTL ตามประเภทการใช้งาน
-     */
-    private function getCacheTTL($params)
-    {
-        // ถ้าเป็นการ count อย่างเดียว - cache นาน (30 นาที)
-        if (!empty($params['count_only'])) {
-            return 1800;
-        }
-
-        // ถ้ามี pagination - cache สั้น (5 นาที)
-        if (!empty($params['limit'])) {
-            return 300;
-        }
-
-        // ถ้าเป็นการดึงข้อมูลเฉพาะ ID - cache ปานกลาง (15 นาที)
-        if (!empty($params['conditions']['key_result_id'])) {
-            return 900;
-        }
-
-        // default - cache 10 นาที
-        return 600;
     }
 
     /**
@@ -175,18 +103,7 @@ class KeyresultModel extends Model
      */
     public function clearKeyResultsCache($keyResultId = null)
     {
-        $cache = \Config\Services::cache();
-
-        if ($keyResultId) {
-            // Clear cache เฉพาะ key result นี้
-            $pattern = 'keyresults_*key_result_id*' . $keyResultId . '*';
-            $cache->deleteMatching($pattern);
-        } else {
-            // Clear cache ทั้งหมดที่เกี่ยวข้องกับ key results
-            $cache->deleteMatching('keyresults_*');
-        }
-
-        log_message('info', 'Cleared key results cache' . ($keyResultId ? " for ID: {$keyResultId}" : ' (all)'));
+        // Caching disabled - do nothing
     }
 
     public function getDepartmentsByKeyResult($key_result_id)
@@ -207,19 +124,7 @@ class KeyresultModel extends Model
      */
     public function getStrategicViewKeyResults($filters = [])
     {
-        // 1. สร้าง Cache Key จาก Filters
-        $cacheKey = 'strategic_view_' . md5(serialize($filters)) . '_v2';
-        $cache = \Config\Services::cache();
 
-        // 2. ลองดึงจาก Cache ก่อน
-        if ($cachedData = $cache->get($cacheKey)) {
-            log_message('info', "Strategic View Cache HIT for key: {$cacheKey}");
-            return $cachedData;
-        }
-
-        log_message('info', "Strategic View Cache MISS for key: {$cacheKey}");
-
-        // 3. ถ้าไม่มีใน Cache ให้ Query Database
         $db = \Config\Database::connect();
 
         // Subquery สำหรับดึง Progress ล่าสุดของแต่ละ Key Result
@@ -300,7 +205,6 @@ class KeyresultModel extends Model
         $builder->orderBy('og.id, obj.sequence_no, kt.sequence_no, kr.sequence_no');
         $results = $builder->get()->getResultArray();
 
-        // 4. Post-process ข้อมูลที่ดึงมา
         $processedResults = array_map(function ($item) {
             $item['departments'] = json_decode($item['departments_json'], true) ?? [];
             unset($item['departments_json']);
@@ -329,9 +233,6 @@ class KeyresultModel extends Model
         }, $results);
 
 
-        // 5. เก็บผลลัพธ์ลง Cache (5 นาที)
-        $cache->save($cacheKey, $processedResults, 300);
-
         return $processedResults;
     }
 
@@ -341,13 +242,6 @@ class KeyresultModel extends Model
     public function getStrategicFilterOptions()
     {
         $db = \Config\Database::connect();
-
-        $cache = \Config\Services::cache();
-        $cacheKey = 'strategic_filter_options_v1';
-
-        if ($cachedData = $cache->get($cacheKey)) {
-            return $cachedData;
-        }
 
         $options = [
             'objective_groups' => $db->table('objective_groups')
@@ -385,9 +279,6 @@ class KeyresultModel extends Model
                 'CoWorking' => 'CoWorking'
             ]
         ];
-
-        // Cache a result for 1 hour
-        $cache->save($cacheKey, $options, 3600);
 
         return $options;
     }
