@@ -38,7 +38,7 @@ var KTKeyresultEntry = function () {
 
         // ✅ สร้าง Tagify instance
         tagifyInstance = new Tagify(el, {
-            whitelist: ["sdg1", "sdg2", "sdg3"],
+            whitelist: ["sdg1","sdg2","sdg3","sdg4","sdg5","sdg6","sdg7","sdg8","sdg9","sdg10","sdg11","sdg12"],
             dropdown: {
                 maxItems: 20,
                 enabled: 0,

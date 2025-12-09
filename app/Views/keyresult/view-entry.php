@@ -23,6 +23,16 @@
             <i class="ki-outline ki-arrow-left fs-5"></i>
             Back to KR
         </a>
+        <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+            <a href="<?= base_url('keyresult/edit-entry/' . $entry['id']) ?>" class="btn btn-sm btn-primary">
+                <i class="ki-outline ki-pencil fs-5"></i>
+                แก้ไขรายการ
+            </a>
+            <button type="button" class="btn btn-sm btn-danger" id="delete-entry-btn" data-entry-id="<?= $entry['id'] ?>">
+                <i class="ki-outline ki-trash fs-5"></i>
+                ลบรายการ
+            </button>
+        <?php endif; ?>
     </div>
     <!--end::Actions-->
 </div>
@@ -97,104 +107,68 @@
 
 <!--begin::View Entry-->
 <div class="d-flex flex-column flex-lg-row">
-    <!--begin::Aside column-->
-    <div class="d-flex flex-column gap-7 gap-lg-10 w-100 w-lg-300px mb-7 me-lg-10">
 
-        <!--begin::ข้อมูลรายการ-->
-            <div class="card card-flush py-4">
-                <!--begin::Card header-->
-                <div class="card-header">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                        <h2>ข้อมูลรายการ</h2>
-                    </div>
-                    <!--end::Card title-->
-                    <!--begin::Card toolbar-->
-                    <div class="card-toolbar">
-                        <?php
-                        $status = $entry['entry_status'] ?? 'draft';
-                        $statusColor = [
-                            'published' => 'success',
-                            'draft' => 'warning',
-                            'inactive' => 'danger'
-                        ][$status] ?? 'secondary';
-                        $statusText = [
-                            'published' => 'เผยแพร่แล้ว',
-                            'draft' => 'ร่าง',
-                            'inactive' => 'ไม่ใช้งาน'
-                        ][$status] ?? 'ไม่ระบุ';
-                        ?>
-                        <div class="rounded-circle bg-<?= $statusColor ?> w-15px h-15px"></div>
-                    </div>
-                    <!--end::Card toolbar-->
-                </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body pt-0">
+<!--begin::View Entry-->
+<div class="d-flex flex-column">
+    <!--begin::Entry Meta Info Bar-->
+    <div class="card card-flush mb-6">
+        <div class="card-body py-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
+                <!--begin::Status & Date Info-->
+                <div class="d-flex flex-wrap align-items-center gap-6">
                     <!--begin::Status-->
-                    <div class="mb-4">
-                        <label class="form-label text-muted">สถานะ:</label>
-                        <div>
-                            <div class="badge badge-light-<?= $statusColor ?> fs-7 fw-bold"><?= $statusText ?></div>
-                        </div>
+                    <?php
+                    $status = $entry['entry_status'] ?? 'draft';
+                    $statusColor = [
+                        'published' => 'success',
+                        'draft' => 'warning',
+                        'inactive' => 'danger'
+                    ][$status] ?? 'secondary';
+                    $statusText = [
+                        'published' => 'เผยแพร่แล้ว',
+                        'draft' => 'ร่าง',
+                        'inactive' => 'ไม่ใช้งาน'
+                    ][$status] ?? 'ไม่ระบุ';
+                    ?>
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-<?= $statusColor ?> w-15px h-15px me-2"></div>
+                        <span class="badge badge-light-<?= $statusColor ?> fs-7 fw-bold"><?= $statusText ?></span>
                     </div>
                     <!--end::Status-->
 
                     <!--begin::Created Date-->
-                    <div class="mb-4">
-                        <label class="form-label text-muted">สร้างเมื่อ:</label>
-                        <div class="fw-bold text-gray-800">
-                            <?= date('d/m/Y H:i:s', strtotime($entry['created_date'])) ?>
+                    <div class="d-flex align-items-center text-muted">
+                        <i class="ki-outline ki-calendar fs-5 me-2"></i>
+                        <div>
+                            <span class="fw-semibold text-gray-800"><?= date('d/m/Y H:i:s', strtotime($entry['created_date'])) ?></span>
                         </div>
                     </div>
                     <!--end::Created Date-->
 
                     <!--begin::Creator-->
-                    <div class="mb-3">
-                        <label class="form-label text-muted">สร้างโดย:</label>
-                        <div class="d-flex align-items-center">
-                            <div class="fw-bold text-gray-800">
-                                <?= esc($entry['creator_name'] ?? 'ไม่ระบุผู้สร้าง') ?>
-                            </div>
-                        </div>
+                    <div class="d-flex align-items-center text-muted">
+                        <i class="ki-outline ki-user fs-5 me-2"></i>
+                        <span class="fw-semibold text-gray-800"><?= esc($entry['creator_name'] ?? 'ไม่ระบุผู้สร้าง') ?></span>
                     </div>
                     <!--end::Creator-->
                 </div>
-                <!--end::Card body-->
-            </div>
-        <!--end::ข้อมูลรายการ-->
+                <!--end::Status & Date Info-->
 
-        <!--begin::Actions-->
-        <div class="card card-flush py-4">
-            <div class="card-header">
-                <div class="card-title">
-                    <h2>การจัดการ</h2>
+                <!--begin::File Count (if any)-->
+                <?php if (!empty($files)): ?>
+                <div class="d-flex align-items-center text-muted">
+                    <i class="ki-outline ki-file fs-5 text-primary me-2"></i>
+                    <span class="fw-bold text-primary"><?= count($files) ?> ไฟล์</span>
                 </div>
-            </div>
-            <div class="card-body pt-0">
-                <div class="d-flex flex-column gap-2">
-                    <a href="<?= base_url('keyresult/edit-entry/' . $entry['id']) ?>" class="btn btn-primary btn-sm">
-                        <i class="ki-outline ki-pencil fs-3"></i>
-                        แก้ไขรายการ
-                    </a>
-                    <a href="<?= base_url('keyresult/view/' . $entry['key_result_id']) ?>" class="btn btn-secondary btn-sm">
-                        <i class="ki-outline ki-arrow-left fs-3"></i>
-                        กลับหน้า Key Result
-                    </a>
-                    <button type="button" class="btn btn-danger btn-sm" id="delete-entry-btn" data-entry-id="<?= $entry['id'] ?>">
-                        <i class="ki-outline ki-trash fs-3"></i>
-                        ลบรายการ
-                    </button>
-                </div>
+                <?php endif; ?>
+                <!--end::File Count-->
             </div>
         </div>
-        <!--end::Actions-->
-
     </div>
-    <!--end::Aside column-->
+    <!--end::Entry Meta Info Bar-->
 
     <!--begin::Main column-->
-    <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+    <div class="d-flex flex-column gap-6">
 
         <!--begin::รายการข้อมูล-->
         <div class="card card-flush py-4">
@@ -338,6 +312,6 @@
         <!--end::ไฟล์แนบ-->
 
     </div>
-    <!--end::Main column-->
+    <!--end::Content-->
 </div>
 <!--end::View Entry-->

@@ -18,9 +18,28 @@
 
 ผมกำลังพัฒนา SDU-OKR project (CodeIgniter 4 + Metronic theme) ที่มีระบบ Department-based Permissions
 ตอนนี้ระบบพร้อมใช้งานแล้ว มีการ login ผ่าน LDAP, permission checking ใน TemplateController, และ session-based authorization ครับ
-ต้องการความช่วยเหลือในเรื่อง: ปรับฟอร์มบันทึกข้อมูลรายงานความคืบหน้า  http://localhost:8083/sdu-okr/progress/form/12
-    - ย้ายสถานะรายงาน , รอบการรายงาน ไปไว้ฝั่งขวา เพื่อเพิ่มพื้นที่การแสดงผลหลักให้เต็ม
-    -จัดรูปแบบ ตำแหน่งการจัดวาง ให้เหมาะสม
+ต้องการความช่วยเหลือในเรื่อง: ปรับระบบจัดการสิทธิผู้ใช้งาน http://localhost:8083/sdu-okr/admin/manage-permissions
+    *เพิ่มผู้ใช้ใหม่ ให้ทำการปรับ Modal สำหรับเพิ่มผู้ใช้งานใหม่
+    -- ใช้การค้นหาผู้ใช้งานจาก eprofile api (https://eprofile.dusit.ac.th/app/api/get_personnel_profile)
+        -- Headers::Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImVsZWFybmluZyJ9.oml1RCGtLv46NvFwzOq_WN6R9vudnW0b6KwaoUeD1z0
+        -- Headers::Content-Type: application/json
+        -- Body::form-data: search_key=''
+    -- ระบบแสดงรายชื่อผู้ใช้งานที่เข้ากับเงื่อนไขในการค้นหา พร้อมปุ่มสำหรับเลือก
+    -- เพิ่ม dropdown สำหรับเลือกหน่วยงานจากตาราง departments
+    -- บันทึกข้อมูลผู้ใช้งานเข้าสู่ฐานข้อมูล ตาราง users
+    -- ข้อมูล field mapping ระหว่าง api->users table
+        USER_ID:uid
+        CITIZEN_CODE:citizen_id
+        FIRST_NAME_THA:first_name
+        LAST_NAME_THA:last_name
+        ACADEMIC_FULLNAME_TH:full_name
+
+
+
+
+
+ช่วยตรวจสอบการแก้ไขรายการข้อมูล http://localhost:8083/sdu-okr/keyresult/edit-entry/41
+    - กรณีที่บันทึกรูปภาพเข้ามา ในโหมดแก้ไข ระบบไม่โหลดภาพเข้ามาในช่องรายละเอียด ดูตัวอย่างข้อมูล key_result_entries.id=41
     ! ให้เขียนเฉพาะส่วนเพิ่มเติม และส่วนที่มีการแก้ไข ไม่ต้องเขียนทั้งไฟล์!!
     ! หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
 
@@ -86,25 +105,58 @@ $routes->get('view-entry/(:num)', 'KeyresultController::viewEntry/$1');
 
 
 
-ผมตัดระบบไฟล์เอกสารออกหมดแล้วจาก ProgressController รวมไปถึง Model, javascript ที่เกี่ยวข้อง สิ่งที่จะมาแทนก็คือ
-    - ดึงรายการข้อมูล มาใส่ใน Dual Listbox เพื่อให้เลือกรายการข้อมูลที่เกี่ยวข้องกับการรายงานความคืบหน้า
-    - ตัวอย่างรายการข้อมูล ตามภาพประกอบ และลิงก์ตัวอย่างคือ http://localhost:8083/sdu-okr/keyresult/view/1
-    - รายการข้อมูลแบบ Dual Listbox ให้จัดวางไว้ต่อจาก "แผนการดำเนินงานต่อไป"
-    - สร้างตารางเพิ่มเติมเพื่อจัดเก็บข้อมูลส่วนนี้แทนการแนบไฟล์ที่ผ่านมา
-    - ให้เขียนเฉพาะส่วนเพิ่มเติม และส่วนที่มีการแก้ไข ไม่ต้องเขียนทั้งไฟล์!!
-    - หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
-
-
-
-
 
 สวัสดีครับ ผมกำลังพัฒนา SDU-OKR project (CodeIgniter 4 + Metronic theme) ที่มีระบบ Department-based Permissions
 ตอนนี้ระบบพร้อมใช้งานแล้ว มีการ login ผ่าน LDAP, permission checking ใน TemplateController, และ session-based authorization ครับ
-ต้องการความช่วยเหลือในเรื่อง: สิทธิการใช้งานสำหรับสำนักบริหารกลยุทธ์
-    - สามารถดู ติดตาม KeyResult ทุกตัวได้ ตามหน่วยงาน สถานะรายงาน
+โดยขณะนี้ ผมได้สร้างสิทธิการใช้งานสำหรับสำนักบริหารกลยุทธ์ StrategicViewer ที่สามารถดู ติดตาม KeyResult ทุกตัวได้ ตามหน่วยงาน สถานะรายงาน
+ต้องการความช่วยเหลือในเรื่อง: ตรวจสอบและปรับปรุง Master Data ให้ถูกต้อง
+    - ปรับปรุง Master ใน Database ให้ถูกต้องตาม ไฟล์ KR-MasterData.xlsx
+
+
+
+ต่อไปช่วยแก้ไข Error ในหน้า Strategic Overview > University Overview http://localhost:8083/sdu-okr/strategic/overview
+    - Strategic Filters ส่วนของหน่วยงานให้ดึง departments.name ขึ้นมาแทน departments.short_name
+    - เมื่อเลือก Fiters หน่วยงานแล้วเกิด error CodeIgniter\Database\Exceptions\DatabaseException #1064
+
+ปรับปรุงโค้ด (Refactor) ไปใช้ Model ที่มีอยู่แล้ว
+    - จาก function overview() $keyresults = $this->getStrategicKeyResults($filters); สามารถไปใช้งาน Model ได้ไหมเพื่อลดความซ้ำซ้อน
+    - หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
+    - ส่วนไหนไม่ได้ใช้และต้องลบออกให้แจ้ง
+
+
+ตรวจสอบสิทธิ Reporter
+    - เมื่อคลิกปุ่มส่งรายงาน form.php kt_progress_submit_btn ระบบไม่ปรับสถานะรายการให้
+    - หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
+    - ส่วนไหนไม่ได้ใช้และต้องลบออกให้แจ้ง
+
+
+ปรับหน้า keyresult/view-entry
+    - ตัด Aside column ออกเพื่อเพิ่มพื้นที่การแสดงผลให้มากขึ้น
+    - ย้ายรายละเอียดที่อยู่ใน Aside column ไปจัดวางให้เหมาะสม
+    - เพิ่มการตรวจสอบสิทธิ (isset($can_manage_entries) && $can_manage_entries)
+    - ให้เขียนเฉพาะส่วนเพิ่มเติม และส่วนที่มีการแก้ไข ไม่ต้องเขียนทั้งไฟล์!!
+    - หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
+    - ส่วนไหนไม่ได้ใช้และต้องลบออกให้แจ้ง
+
+
+
+จากภาพประกอบที่เชื่อมโยงไปยังหน้า strategic/overview เปลี่ยนการแสดงผลส่วนนี้จาก modal เชื่อมโยงไปยังรายละเอียดแต่ละส่วน viewKeyResultDetails(1), viewProgressHistory(1), viewDetailedReport(1)
+    - ทวนความเข้าใจความต้องการก่อนที่จะเริ่มปรับ Code
+    - ให้เขียนเฉพาะส่วนเพิ่มเติม และส่วนที่มีการแก้ไข ไม่ต้องเขียนทั้งไฟล์!!
+    - หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
+    - ส่วนไหนไม่ได้ใช้และต้องลบออกให้แจ้ง
+
+    - ปรับการแสดงผลของหน้า Strategic Overview > University Overview ดังนี้
+        -- ไม่ต้องแสดง KR แยกตามหน่วยงาน แต่ให้แสดงแค่รายการเดียว (ตัด Column หน่วยงานออกจากตาราง) เพื่อลดความซ้ำซ้อนของการแสดงผล
+        -- เพิ่ม badge หน่วยงานที่เกี่ยว (Departments Badges ) ตามตัวอย่างโดยปรับให้เป็นไปตามข้อมูลจริงจากระบบ แยกสี badge ตาม
+        -- หน่วยงานที่เกี่ยวข้องแต่ละ KR มาจากตาราง key_result_departments
+    - ทวนความเข้าใจความต้องการก่อนที่จะเริ่มปรับ Code
+    - ให้เขียนเฉพาะส่วนเพิ่มเติม และส่วนที่มีการแก้ไข ไม่ต้องเขียนทั้งไฟล์!!
+    - หากต้องการข้อมูลเพิ่มเติมให้แจ้งก่อนทำจะได้ไม่เขียนโค๊ดซ้ำซ้อนกับที่มี
+
     - ขอคำแนะนำว่าควรออกแบบลักษณะไหน
     - ยังไม่ต้องเขียน Code
-    
+
 
 
     - ตรวจสอบหน้า Dashboard ไม่แสดงผล http://localhost:8083/sdu-okr/dashboard

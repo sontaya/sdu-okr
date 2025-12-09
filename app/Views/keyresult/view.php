@@ -59,36 +59,44 @@
 
                                 <!--begin::Title-->
                                 <h1 class="text-gray-800 text-hover-primary fs-5 fw-bold mb-2">
-                                   KR: <?= esc($keyresult['key_result_name']) ?>
+                                   KR: <?= esc($keyresult['key_result_template_name']) ?>
+                                </h1>
+                                <!--end::Title-->
+
+                                <!--begin::Title-->
+                                <h1 class="text-gray-800 text-hover-primary fs-5 fw-bold mb-2">
+                                   KR<?= esc($keyresult['key_result_year']) ?>: <?= esc($keyresult['key_result_name']) ?>
                                 </h1>
                                 <!--end::Title-->
                             </div>
                             <!--end::Details-->
                             <!--begin::Actions-->
-                            <div class="d-flex mb-4">
-                                <a href="<?= base_url('keyresult/form/'.esc($keyresult['key_result_id'])); ?>" class="btn btn-sm btn-primary me-3">เพิ่มรายการข้อมูล</a>
-                                <!--begin::Menu-->
-                                <div class="me-0">
-                                    <button class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                        <i class="ki-solid ki-dots-horizontal fs-2x"></i>
-                                    </button>
-                                    <!--begin::Menu 3-->
-                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-200px py-3" data-kt-menu="true">
-                                        <!--begin::Heading-->
-                                        <div class="menu-item px-3">
-                                            <div class="menu-content text-muted pb-2 px-3 fs-7 text-uppercase">Actions</div>
+                            <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+                                <div class="d-flex mb-4">
+                                    <a href="<?= base_url('keyresult/form/'.esc($keyresult['key_result_id'])); ?>" class="btn btn-sm btn-primary me-3">เพิ่มรายการข้อมูล</a>
+                                    <!--begin::Menu-->
+                                    <div class="me-0">
+                                        <button class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                            <i class="ki-solid ki-dots-horizontal fs-2x"></i>
+                                        </button>
+                                        <!--begin::Menu 3-->
+                                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-200px py-3" data-kt-menu="true">
+                                            <!--begin::Heading-->
+                                            <div class="menu-item px-3">
+                                                <div class="menu-content text-muted pb-2 px-3 fs-7 text-uppercase">Actions</div>
+                                            </div>
+                                            <!--end::Heading-->
+                                            <!--begin::Menu item-->
+                                            <div class="menu-item px-3">
+                                                <a href="#" class="menu-link px-3">Create Invoice</a>
+                                            </div>
+                                            <!--end::Menu item-->
                                         </div>
-                                        <!--end::Heading-->
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a href="#" class="menu-link px-3">Create Invoice</a>
-                                        </div>
-                                        <!--end::Menu item-->
+                                        <!--end::Menu 3-->
                                     </div>
-                                    <!--end::Menu 3-->
+                                    <!--end::Menu-->
                                 </div>
-                                <!--end::Menu-->
-                            </div>
+                            <?php endif; ?>
                             <!--end::Actions-->
                         </div>
                         <!--end::KR Heading-->
@@ -176,15 +184,17 @@
                     </div>
                     <!--end::Search-->
                     <!--begin::Filter-->
-                    <div class="w-150px">
-                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="สถานะ" data-kt-entries-filter="status">
-                            <option></option>
-                            <option value="all">ทั้งหมด</option>
-                            <option value="published">Published</option>
-                            <option value="draft">Draft</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
+                        <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+                            <div class="w-150px">
+                                <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="สถานะ" data-kt-entries-filter="status">
+                                    <option></option>
+                                    <option value="all">ทั้งหมด</option>
+                                    <option value="published">Published</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        <?php endif; ?>
                     <!--end::Filter-->
                 </div>
                 <!--end::Card toolbar-->
@@ -293,35 +303,43 @@
                                     </div>
                                 </td>
                                     <td class="text-end">
-                                        <a href="#" class="btn btn-sm btn-light btn-active-light-primary btn-flex btn-center" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                            Actions
-                                            <i class="ki-outline ki-down fs-5 ms-1"></i>
-                                        </a>
-                                        <!--begin::Menu-->
-                                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-150px py-4" data-kt-menu="true">
-                                            <!--begin::Menu item - แสดงรายละเอียด-->
-                                            <div class="menu-item px-3">
-                                                <a href="<?= base_url('keyresult/view-entry/' . $entry['id']) ?>" class="menu-link px-3">
-                                                    <i class="ki-outline ki-eye fs-5 me-2"></i>แสดงรายละเอียด
-                                                </a>
+
+                                        <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+                                            <a href="#" class="btn btn-sm btn-light btn-active-light-primary btn-flex btn-center" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                                Actions
+                                                <i class="ki-outline ki-down fs-5 ms-1"></i>
+                                            </a>
+                                            <!--begin::Menu-->
+                                            <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-150px py-4" data-kt-menu="true">
+                                                <!--begin::Menu item - แสดงรายละเอียด-->
+                                                <div class="menu-item px-3">
+                                                    <a href="<?= base_url('keyresult/view-entry/' . $entry['id']) ?>" class="menu-link px-3">
+                                                        <i class="ki-outline ki-eye fs-5 me-2"></i>แสดงรายละเอียด
+                                                    </a>
+                                                </div>
+                                                <!--end::Menu item-->
+                                                <!--begin::Menu item - แก้ไข-->
+                                                <div class="menu-item px-3">
+                                                    <a href="<?= base_url('keyresult/edit-entry/' . $entry['id']) ?>" class="menu-link px-3">
+                                                        <i class="ki-outline ki-pencil fs-5 me-2"></i>แก้ไข
+                                                    </a>
+                                                </div>
+                                                <!--end::Menu item-->
+                                                <!--begin::Menu item - ลบ-->
+                                                <div class="menu-item px-3">
+                                                    <a href="#" class="menu-link px-3 text-danger delete-entry-btn" data-entry-id="<?= $entry['id'] ?>">
+                                                        <i class="ki-outline ki-trash fs-5 me-2"></i>ลบ
+                                                    </a>
+                                                </div>
+                                                <!--end::Menu item-->
                                             </div>
-                                            <!--end::Menu item-->
-                                            <!--begin::Menu item - แก้ไข-->
-                                            <div class="menu-item px-3">
-                                                <a href="<?= base_url('keyresult/edit-entry/' . $entry['id']) ?>" class="menu-link px-3">
-                                                    <i class="ki-outline ki-pencil fs-5 me-2"></i>แก้ไข
+                                            <!--end::Menu-->
+                                            <?php else: ?>
+                                                <!-- สำหรับผู้ที่ไม่มีสิทธิ์จัดการ แสดงเฉพาะปุ่มดู -->
+                                                <a href="<?= base_url('keyresult/view-entry/' . $entry['id']) ?>" class="btn btn-sm btn-light-primary">
+                                                    <i class="ki-outline ki-eye fs-6 me-1"></i>ดูรายละเอียด
                                                 </a>
-                                            </div>
-                                            <!--end::Menu item-->
-                                            <!--begin::Menu item - ลบ-->
-                                            <div class="menu-item px-3">
-                                                <a href="#" class="menu-link px-3 text-danger delete-entry-btn" data-entry-id="<?= $entry['id'] ?>">
-                                                    <i class="ki-outline ki-trash fs-5 me-2"></i>ลบ
-                                                </a>
-                                            </div>
-                                            <!--end::Menu item-->
-                                        </div>
-                                        <!--end::Menu-->
+                                            <?php endif; ?>
                                     </td>
                             </tr>
                         <?php endforeach; ?>
@@ -330,21 +348,33 @@
                 </table>
                 <!--end::Table-->
                 <?php else: ?>
-                <!--begin::Empty state-->
-                <div class="d-flex flex-column flex-center text-center p-10">
-                    <div class="card-px text-center py-20 my-10">
-                        <h2 class="fs-2x fw-bold mb-10">ยังไม่มีรายการข้อมูล</h2>
-                        <p class="text-gray-400 fs-4 fw-semibold mb-10">
-                            เริ่มต้นโดยการเพิ่มรายการข้อมูลแรกของคุณ<br>
-                            เพื่อติดตามความก้าวหน้าของ Key Result นี้
-                        </p>
-                        <a href="<?= base_url('keyresult/form/' . $keyresult['key_result_id']) ?>" class="btn btn-primary">
-                            <i class="ki-outline ki-plus fs-2"></i>เพิ่มรายการแรก
-                        </a>
-                    </div>
-                    <img class="mw-300px" src="<?= base_url('assets/images/no-data-illustration.svg') ?>" alt="ไม่มีข้อมูล" />
-                </div>
-                <!--end::Empty state-->
+                    <!--begin::Empty state-->
+                        <div class="d-flex flex-column flex-center text-center p-10">
+                            <div class="card-px text-center py-20 my-10">
+                                <h2 class="fs-2x fw-bold mb-10">
+                                    <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+                                        ยังไม่มีรายการข้อมูล
+                                    <?php else: ?>
+                                        ไม่มีรายการข้อมูลที่เผยแพร่
+                                    <?php endif; ?>
+                                </h2>
+                                <p class="text-gray-400 fs-4 fw-semibold mb-10">
+                                    <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+                                        เริ่มต้นโดยการเพิ่มรายการข้อมูลแรกของคุณ<br>
+                                        เพื่อติดตามความก้าวหน้าของ Key Result นี้
+                                    <?php else: ?>
+                                        รายการข้อมูลจะแสดงที่นี่เมื่อมีการเผยแพร่
+                                    <?php endif; ?>
+                                </p>
+                                <?php if (isset($can_manage_entries) && $can_manage_entries): ?>
+                                <a href="<?= base_url('keyresult/form/' . $keyresult['key_result_id']) ?>" class="btn btn-primary">
+                                    <i class="ki-outline ki-plus fs-2"></i>เพิ่มรายการแรก
+                                </a>
+                                <?php endif; ?>
+                            </div>
+                            <img class="mw-300px" src="<?= base_url('assets/images/no-data-illustration.svg') ?>" alt="ไม่มีข้อมูล" />
+                        </div>
+                    <!--end::Empty state-->
                 <?php endif; ?>
             </div>
             <!--end::Card body-->

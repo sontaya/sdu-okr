@@ -767,5 +767,74 @@ class ProgressController extends TemplateController
                     ->getResultArray();
     }
 
+/**
+ * แสดงรายงานรายละเอียดแบบเต็ม (สำหรับ Admin/Strategic Viewer)
+ */
+public function detailedReport($keyResultId)
+{
+    // ตรวจสอบสิทธิ์
+    if (!hasRole('Admin') && !canViewStrategicDashboard()) {
+        return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงรายงานรายละเอียด');
+    }
 
+    $progressModel = new ProgressModel(); // เปลี่ยนเป็น new แทน
+    $keyResultModel = new KeyresultModel();
+
+    // ดึงข้อมูล Key Result
+    $keyresult = $progressModel->getKeyResultById($keyResultId);
+    if (!$keyresult) {
+        return redirect()->back()->with('error', 'ไม่พบข้อมูล Key Result');
+    }
+
+    // ดึงประวัติการรายงานทั้งหมด
+    $progressHistory = $progressModel->getProgressHistory($keyResultId);
+
+    // ดึงข้อมูลหน่วยงาน
+    $departments = $keyResultModel->getDepartmentsByKeyResult($keyResultId);
+
+    // ดึงสถิติรายละเอียด
+    $detailedStats = $this->generateDetailedStats($keyResultId, $progressHistory);
+
+    $this->data['keyresult'] = $keyresult;
+    $this->data['departments'] = $departments;
+    $this->data['progressHistory'] = $progressHistory;
+    $this->data['detailedStats'] = $detailedStats;
+    $this->data['title'] = 'รายงานรายละเอียด - ' . $keyresult['key_result_name'];
+
+    $this->contentTemplate = 'progress/detailed-report';
+    return $this->render();
+}
+
+/**
+ * สร้างสถิติรายละเอียดสำหรับรายงาน
+ */
+private function generateDetailedStats($keyResultId, $progressHistory)
+{
+    $totalReports = count($progressHistory);
+    $approvedReports = array_filter($progressHistory, function($p) {
+        return $p['status'] === 'approved';
+    });
+
+    $submittedReports = array_filter($progressHistory, function($p) {
+        return in_array($p['status'], ['submitted', 'approved', 'rejected']);
+    });
+
+    $avgProgress = 0;
+    if (!empty($approvedReports)) {
+        $totalProgress = array_sum(array_column($approvedReports, 'progress_percentage'));
+        $avgProgress = round($totalProgress / count($approvedReports), 1);
+    }
+
+    $latestUpdate = !empty($progressHistory) ? $progressHistory[0]['updated_date'] : null;
+    $approvalRate = count($submittedReports) > 0 ? round((count($approvedReports) / count($submittedReports)) * 100, 1) : 0;
+
+    return [
+        'total_reports' => $totalReports,
+        'approved_reports' => count($approvedReports),
+        'submitted_reports' => count($submittedReports),
+        'avg_progress' => $avgProgress,
+        'latest_update' => $latestUpdate,
+        'approval_rate' => $approvalRate
+    ];
+}
 }

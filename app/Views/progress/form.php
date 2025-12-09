@@ -143,15 +143,51 @@
                         </div>
                     </div>
                     <div class="card-body pt-0">
-                        <select class="form-select mb-2" name="status" data-control="select2" data-hide-search="true"
-                                data-placeholder="เลือกสถานะ" id="progress_status_select">
-                            <option></option>
-                            <option value="draft" <?= ($progress['status'] ?? 'draft') === 'draft' ? 'selected' : '' ?>>ฉบับร่าง</option>
-                            <option value="submitted" <?= ($progress['status'] ?? '') === 'submitted' ? 'selected' : '' ?>>ส่งรายงานแล้ว</option>
-                            <option value="approved" <?= ($progress['status'] ?? '') === 'approved' ? 'selected' : '' ?>>อนุมัติแล้ว</option>
-                            <option value="rejected" <?= ($progress['status'] ?? '') === 'rejected' ? 'selected' : '' ?>>ปฏิเสธ</option>
-                        </select>
-                        <div class="text-muted fs-7">กำหนดสถานะการรายงาน</div>
+                        <?php
+                        // ✅ ตรวจสอบสิทธิ์และสถานะปัจจุบัน
+                        $currentStatus = $progress['status'] ?? 'draft';
+                        $canEditStatus = hasRole('Approver') || hasRole('Admin');
+                        $isNewReport = !isset($is_edit) || !$is_edit;
+                        ?>
+
+                        <?php if ($isNewReport || ($currentStatus === 'draft' && !$canEditStatus)): ?>
+                            <!-- ✅ Reporter เห็นเฉพาะ draft สำหรับรายงานใหม่หรือแก้ไข draft -->
+                            <select class="form-select mb-2" name="status" data-control="select2" data-hide-search="true"
+                                    data-placeholder="เลือกสถานะ" id="progress_status_select">
+                                <option value="draft" selected>ฉบับร่าง</option>
+                            </select>
+                            <div class="text-muted fs-7">รายงานจะถูกบันทึกเป็นฉบับร่าง</div>
+
+                        <?php elseif ($canEditStatus): ?>
+                            <!-- ✅ Approver/Admin เห็นสถานะทั้งหมด -->
+                            <select class="form-select mb-2" name="status" data-control="select2" data-hide-search="true"
+                                    data-placeholder="เลือกสถานะ" id="progress_status_select">
+                                <option value="draft" <?= $currentStatus === 'draft' ? 'selected' : '' ?>>ฉบับร่าง</option>
+                                <option value="submitted" <?= $currentStatus === 'submitted' ? 'selected' : '' ?>>ส่งรายงานแล้ว</option>
+                                <option value="approved" <?= $currentStatus === 'approved' ? 'selected' : '' ?>>อนุมัติแล้ว</option>
+                                <option value="rejected" <?= $currentStatus === 'rejected' ? 'selected' : '' ?>>ปฏิเสธ</option>
+                            </select>
+                            <div class="text-muted fs-7">กำหนดสถานะการรายงาน</div>
+
+                        <?php else: ?>
+                            <!-- ✅ แสดงสถานะปัจจุบันเป็น readonly -->
+                            <div class="alert alert-info d-flex align-items-center">
+                                <div class="rounded-circle bg-<?= $currentStatus === 'submitted' ? 'info' : ($currentStatus === 'approved' ? 'success' : 'danger') ?> w-15px h-15px me-3"></div>
+                                <div>
+                                    <strong>สถานะปัจจุบัน:</strong>
+                                    <?php
+                                    $statusText = [
+                                        'draft' => 'ฉบับร่าง',
+                                        'submitted' => 'ส่งรายงานแล้ว',
+                                        'approved' => 'อนุมัติแล้ว',
+                                        'rejected' => 'ปฏิเสธ'
+                                    ];
+                                    echo $statusText[$currentStatus] ?? $currentStatus;
+                                    ?>
+                                </div>
+                            </div>
+                            <input type="hidden" name="status" value="<?= $currentStatus ?>">
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

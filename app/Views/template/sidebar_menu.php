@@ -108,31 +108,50 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
             <!--end::Heading-->
 
             <!--begin:Menu item Dashboard-->
-            <div data-kt-menu-trigger="click" class="menu-item <?= isMenuGroupActive($activeMenu, 'dashboard') ? 'here show' : '' ?> menu-accordion">
-                <!--begin:Menu link-->
-                <span class="menu-link">
-                    <span class="menu-icon">
-                        <i class="ki-outline ki-home-2 fs-2"></i>
-                    </span>
-                    <span class="menu-title">Dashboards</span>
-                    <span class="menu-arrow"></span>
-                </span>
-                <!--end:Menu link-->
-                <!--begin:Menu sub-->
-                <div class="menu-sub menu-sub-accordion">
-                    <!--begin:Menu item Executive-->
-                    <div class="menu-item">
-                        <a class="menu-link <?= isMenuActive($activeMenu, 'dashboard-executive') ? 'active' : '' ?>" href="<?= base_url('dashboard') ?>">
-                            <span class="menu-bullet">
-                                <span class="bullet bullet-dot"></span>
+            <?php
+                // เฉพาะ Admin และ StrategicViewer เท่านั้นที่เห็น Dashboard
+                $userRoles = session('user_roles') ?? [];
+                $canSeeDashboard = (in_array('Admin', $userRoles) || in_array('StrategicViewer', $userRoles) || in_array('Approver', $userRoles));
+
+                // แสดง Dashboard menu เฉพาะกรณีที่มีสิทธิ์
+                if ($canSeeDashboard):
+                ?>
+                    <div data-kt-menu-trigger="click" class="menu-item <?= isMenuGroupActive($activeMenu, 'dashboard') ? 'here show' : '' ?> menu-accordion">
+                        <!--begin:Menu link-->
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-home-2 fs-2"></i>
                             </span>
-                            <span class="menu-title">Executive</span>
-                        </a>
+                            <span class="menu-title">Dashboards</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <!--end:Menu link-->
+                        <!--begin:Menu sub-->
+                        <div class="menu-sub menu-sub-accordion">
+                            <?php if (in_array('Admin', $userRoles) || in_array('StrategicViewer', $userRoles)): ?>
+                            <div class="menu-item">
+                                <a class="menu-link <?= isMenuActive($activeMenu, 'dashboard-executive') ? 'active' : '' ?>" href="<?= base_url('dashboard') ?>">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">Executive</span>
+                                </a>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (in_array('Approver', $userRoles) || in_array('Admin', $userRoles)): ?>
+                                <div class="menu-item">
+                                    <a class="menu-link <?= isMenuActive($activeMenu, 'dashboard-department') ? 'active' : '' ?>" href="<?= base_url('dashboard/department') ?>">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Department</span>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <!--end:Menu sub-->
                     </div>
-                    <!--end:Menu item Executive-->
-                </div>
-                <!--end:Menu sub-->
-            </div>
+                <?php endif; ?>
             <!--end:Menu item Dashboard-->
 
             <!--begin:Menu item KeyResults-->
@@ -178,9 +197,69 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
                 </div>
             <!--end:Menu item KeyResults-->
 
+            <?php
+                // ตรวจสอบว่าผู้ใช้มีสิทธิ์ Strategic Viewer หรือไม่
+                $canViewStrategic = (isset($current_user) && ($current_user['is_admin'] || isStrategicViewer()));
+            ?>
+
+            <!--begin:Menu item Strategic (เฉพาะ Strategic Viewer หรือ Admin)-->
+            <?php if ($canViewStrategic): ?>
+                <div data-kt-menu-trigger="click" class="menu-item <?= isMenuGroupActive($activeMenu, 'strategic') ? 'here show' : '' ?> menu-accordion">
+                    <!--begin:Menu link-->
+                    <span class="menu-link">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-chart-simple fs-2"></i>
+                        </span>
+                        <span class="menu-title">Strategic Overview</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <!--end:Menu link-->
+                    <!--begin:Menu sub-->
+                    <div class="menu-sub menu-sub-accordion">
+                        <!--begin:Menu item Overview-->
+                        <div class="menu-item">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'strategic-overview') ? 'active' : '' ?>" href="<?= base_url('strategic/overview') ?>">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">University Overview</span>
+                            </a>
+                        </div>
+                        <!--end:Menu item Overview-->
+
+                        <!--begin:Menu item Department Analysis (เฉพาะ Admin)-->
+                        <?php if (isset($current_user['is_admin']) && $current_user['is_admin']): ?>
+                        <div class="menu-item">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'strategic-departments') ? 'active' : '' ?>" href="<?= base_url('strategic/departments') ?>">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Department Analysis</span>
+                            </a>
+                        </div>
+                        <?php endif; ?>
+                        <!--end:Menu item Department Analysis-->
+
+                        <!--begin:Menu item Reports-->
+                        <div class="menu-item">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'strategic-reports') ? 'active' : '' ?>" href="<?= base_url('strategic/reports') ?>">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Strategic Reports</span>
+                            </a>
+                        </div>
+                        <!--end:Menu item Reports-->
+                    </div>
+                    <!--end:Menu sub-->
+                </div>
+            <?php endif; ?>
+            <!--end:Menu item Strategic-->
+
+
             <!--begin:Menu item Admin (เฉพาะ Admin)-->
             <?php if (isset($current_user['is_admin']) && $current_user['is_admin']): ?>
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                <div data-kt-menu-trigger="click" class="menu-item <?= isMenuGroupActive($activeMenu, 'admin') ? 'here show' : '' ?> menu-accordion">
                     <!--begin:Menu link-->
                     <span class="menu-link">
                         <span class="menu-icon">
@@ -192,19 +271,9 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
                     <!--end:Menu link-->
                     <!--begin:Menu sub-->
                     <div class="menu-sub menu-sub-accordion">
-                        <!--begin:Menu item Dashboard-->
-                        <div class="menu-item">
-                            <a class="menu-link" href="<?= base_url('admin/dashboard') ?>">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Dashboard</span>
-                            </a>
-                        </div>
-                        <!--end:Menu item Dashboard-->
                         <!--begin:Menu item Permissions-->
                         <div class="menu-item">
-                            <a class="menu-link" href="<?= base_url('admin/manage-permissions') ?>">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'admin-permissions') ? 'active' : '' ?>" href="<?= base_url('admin/manage-permissions') ?>">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>

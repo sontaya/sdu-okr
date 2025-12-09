@@ -1,4 +1,4 @@
-<!-- สร้างไฟล์: app/Views/admin/manage-permissions.php -->
+<!-- Enhanced manage-permissions.php with eProfile integration -->
 
 <div class="row g-6 g-xl-9">
     <!-- Summary Cards -->
@@ -69,10 +69,21 @@
                        class="form-control form-control-solid w-250px ps-13"
                        placeholder="ค้นหาผู้ใช้..." />
             </div>
+            <!-- Department Filter -->
+            <div class="d-flex align-items-center ms-3">
+                <select id="department-filter" class="form-select form-select-solid w-200px">
+                    <option value="">ทุกหน่วยงาน</option>
+                    <?php foreach ($all_departments as $dept): ?>
+                        <option value="<?= $dept['id'] ?>" <?= $dept['id'] == session('department') ? 'selected' : '' ?>>
+                            <?= esc($dept['short_name']) ?> - <?= esc($dept['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
         <div class="card-toolbar">
             <div class="d-flex justify-content-end" data-kt-user-table-toolbar="base">
-                <button type="button" class="btn btn-light-primary me-3" data-bs-toggle="modal" data-bs-target="#kt_modal_add_user">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_add_user">
                     <i class="ki-outline ki-plus fs-2"></i>
                     เพิ่มผู้ใช้ใหม่
                 </button>
@@ -91,12 +102,12 @@
             </thead>
             <tbody class="text-gray-600 fw-semibold">
                 <?php foreach ($users as $user): ?>
-                <tr data-user-id="<?= $user['id'] ?>">
+                <tr data-user-id="<?= $user['id'] ?>" data-department-id="<?= $user['department_id'] ?>">
                     <td class="d-flex align-items-center">
                         <div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
                             <div class="symbol-label">
                                 <div class="symbol-label fs-3 bg-light-primary text-primary">
-                                    <?= strtoupper(substr($user['full_name'], 0, 1)) ?>
+                                    <?= strtoupper(substr($user['uid'], 0, 1)) ?>
                                 </div>
                             </div>
                         </div>
@@ -144,6 +155,14 @@
                             </button>
                             <div class="dropdown-menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4">
                                 <div class="menu-item px-3">
+                                    <button class="menu-link px-3 edit-user-btn" data-user-id="<?= $user['id'] ?>">
+                                        <i class="ki-outline ki-pencil fs-6 me-2"></i>
+                                        แก้ไขข้อมูลผู้ใช้
+                                    </button>
+                                </div>
+                                <div class="separator my-2"></div>
+
+                                <div class="menu-item px-3">
                                     <button class="menu-link px-3 grant-role-btn"
                                             data-user-id="<?= $user['id'] ?>"
                                             data-role="Reporter">
@@ -188,204 +207,228 @@
     </div>
 </div>
 
-<!-- Modal เพิ่มผู้ใช้ใหม่ -->
+<!-- Enhanced Modal เพิ่มผู้ใช้ใหม่ -->
 <div class="modal fade" id="kt_modal_add_user" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered mw-650px">
+    <div class="modal-dialog modal-dialog-centered mw-900px">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="fw-bold">เพิ่มผู้ใช้ใหม่</h2>
+                <h2 class="fw-bold">เพิ่มผู้ใช้ใหม่จากระบบ eProfile</h2>
                 <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
                     <i class="ki-outline ki-cross fs-1"></i>
                 </div>
             </div>
             <div class="modal-body py-10">
-                <form id="kt_modal_add_user_form">
+                <!-- Search Step -->
+                <div id="search-step">
                     <div class="mb-10">
-                        <label class="required form-label">UID ผู้ใช้</label>
-                        <input type="text" name="uid" class="form-control" placeholder="เช่น john.doe" required />
-                        <div class="form-text">UID ที่ใช้ล็อกอินเข้าระบบ</div>
-                    </div>
-                    <div class="mb-10">
-                        <label class="required form-label">ชื่อ-นามสกุล</label>
-                        <input type="text" name="full_name" class="form-control" placeholder="เช่น นายจอห์น โด" required />
-                    </div>
-                    <div class="mb-10">
-                        <label class="required form-label">เลขบัตรประชาชน</label>
-                        <input type="text" name="citizen_id" class="form-control" placeholder="1234567890123" maxlength="13" required />
-                    </div>
-                    <div class="mb-10">
-                        <label class="form-label">สิทธิ์เริ่มต้น</label>
-                        <div class="form-check form-check-custom form-check-solid mb-2">
-                            <input class="form-check-input" type="checkbox" name="roles[]" value="Reporter" id="role_reporter" />
-                            <label class="form-check-label" for="role_reporter">ผู้รายงาน</label>
+                        <label class="required form-label">ค้นหาผู้ใช้จาก eProfile</label>
+                        <div class="input-group">
+                            <input type="text" id="eprofile-search" class="form-control"
+                                   placeholder="ค้นหาด้วยชื่อ, นามสกุล, หรือ USER_ID (อย่างน้อย 2 ตัวอักษร)" />
+                            <button class="btn btn-primary" type="button" id="search-eprofile-btn">
+                                <i class="ki-outline ki-magnifier fs-4"></i>
+                                ค้นหา
+                            </button>
                         </div>
-                        <div class="form-check form-check-custom form-check-solid mb-2">
-                            <input class="form-check-input" type="checkbox" name="roles[]" value="Approver" id="role_approver" />
-                            <label class="form-check-label" for="role_approver">ผู้อนุมัติ</label>
+                        <div class="form-text">ระบบจะค้นหาจากฐานข้อมูลบุคลากรมหาวิทยาลัย</div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div id="search-loading" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">กำลังค้นหา...</span>
                         </div>
-                        <div class="form-check form-check-custom form-check-solid">
-                            <input class="form-check-input" type="checkbox" name="roles[]" value="Admin" id="role_admin" />
-                            <label class="form-check-label" for="role_admin">ผู้ดูแลระบบ</label>
+                        <div class="mt-3">กำลังค้นหาข้อมูลจาก eProfile...</div>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div id="search-results" style="display: none;">
+                        <div class="separator my-5"></div>
+                        <h5 class="mb-5">ผลการค้นหา:</h5>
+                        <div id="users-list" class="max-h-400px overflow-auto">
+                            <!-- Dynamic content -->
                         </div>
                     </div>
-                    <div class="text-center">
-                        <button type="button" data-bs-dismiss="modal" class="btn btn-light me-3">ยกเลิก</button>
-                        <button type="submit" class="btn btn-primary">
-                            <span class="indicator-label">เพิ่มผู้ใช้</span>
-                            <span class="indicator-progress">กำลังเพิ่ม...
-                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                </div>
+
+                <!-- User Details Step -->
+                <div id="user-details-step" style="display: none;">
+                    <div class="d-flex align-items-center mb-5">
+                        <button type="button" id="back-to-search" class="btn btn-sm btn-light-primary me-3">
+                            <i class="ki-outline ki-arrow-left fs-4"></i>
+                            ย้อนกลับ
                         </button>
+                        <h5 class="mb-0">รายละเอียดผู้ใช้ใหม่</h5>
                     </div>
-                </form>
+
+                    <form id="kt_modal_add_user_form">
+                        <!-- User Info Display -->
+                        <div class="card mb-8">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">ชื่อ-นามสกุล:</label>
+                                            <div id="display-full-name" class="form-control-plaintext">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department Selection -->
+                        <div class="mb-8">
+                            <label class="required form-label">หน่วยงาน</label>
+                            <select name="department_id" id="department-select" class="form-select" required>
+                                <option value="">-- เลือกหน่วยงาน --</option>
+                                <?php foreach ($departments as $dept): ?>
+                                    <option value="<?= $dept['id'] ?>" <?= $dept['id'] == session('department') ? 'selected' : '' ?>>
+                                        <?= esc($dept['short_name']) ?> - <?= esc($dept['name'] ?? 'ไม่ระบุ') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">เลือกหน่วยงานที่ผู้ใช้สังกัด</div>
+                        </div>
+
+                        <!-- Initial Roles -->
+                        <div class="mb-8">
+                            <label class="form-label">สิทธิ์เริ่มต้น</label>
+                            <div class="form-check form-check-custom form-check-solid mb-2">
+                                <input class="form-check-input" type="checkbox" name="roles[]" value="Reporter" id="role_reporter" />
+                                <label class="form-check-label" for="role_reporter">
+                                    <strong>ผู้รายงาน</strong> - สามารถบันทึกและส่งรายงานความคืบหน้า
+                                </label>
+                            </div>
+                            <div class="form-check form-check-custom form-check-solid mb-2">
+                                <input class="form-check-input" type="checkbox" name="roles[]" value="Approver" id="role_approver" />
+                                <label class="form-check-label" for="role_approver">
+                                    <strong>ผู้อนุมัติ</strong> - สามารถอนุมัติรายงาน + สิทธิ์ผู้รายงาน
+                                </label>
+                            </div>
+                            <div class="form-check form-check-custom form-check-solid">
+                                <input class="form-check-input" type="checkbox" name="roles[]" value="Admin" id="role_admin" />
+                                <label class="form-check-label" for="role_admin">
+                                    <strong>ผู้ดูแลระบบ</strong> - จัดการผู้ใช้ + สิทธิ์ทั้งหมด
+                                </label>
+                            </div>
+                            <div class="form-text mt-2">สามารถเลือกได้หลายสิทธิ์ หรือไม่เลือกเลยก็ได้ (เพิ่มทีหลังได้)</div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="button" data-bs-dismiss="modal" class="btn btn-light me-3">ยกเลิก</button>
+                            <button type="submit" class="btn btn-primary" id="add-user-btn">
+                                <span class="indicator-label">
+                                    <i class="ki-outline ki-plus fs-4 me-2"></i>
+                                    เพิ่มผู้ใช้
+                                </span>
+                                <span class="indicator-progress">กำลังเพิ่ม...
+                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                            </button>
+                        </div>
+
+                        <!-- Hidden field for user data -->
+                        <input type="hidden" id="selected-user-data" name="user_data" />
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Grant Role
-    document.querySelectorAll('.grant-role-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userId = this.dataset.userId;
-            const role = this.dataset.role;
 
-            if (confirm(`คุณต้องการเพิ่มสิทธิ์ "${getUserRoleNames(role)}" ให้ผู้ใช้นี้ใช่หรือไม่?`)) {
-                grantRole(userId, role);
-            }
-        });
-    });
+<!-- Modal แก้ไขผู้ใช้ -->
+<div class="modal fade" id="kt_modal_edit_user" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-650px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="fw-bold">แก้ไขข้อมูลผู้ใช้</h2>
+                <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                    <i class="ki-outline ki-cross fs-1"></i>
+                </div>
+            </div>
+            <div class="modal-body py-10">
+                <form id="kt_modal_edit_user_form">
+                    <!-- User Info Display -->
+                    <div class="card mb-8">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">USER ID:</label>
+                                        <div id="edit-display-user-id" class="form-control-plaintext">-</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">ชื่อ-นามสกุล:</label>
+                                        <div id="edit-display-full-name" class="form-control-plaintext">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">เลขบัตรประชาชน:</label>
+                                        <div id="edit-display-citizen-id" class="form-control-plaintext">-</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">ชื่อย่อ:</label>
+                                        <div id="edit-display-first-last-name" class="form-control-plaintext">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    // Remove Role
-    document.querySelectorAll('.remove-role').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const userId = this.dataset.userId;
-            const role = this.dataset.role;
+                    <!-- Department Selection -->
+                    <div class="mb-8">
+                        <label class="required form-label">หน่วยงาน</label>
+                        <select name="department_id" id="edit-department-select" class="form-select" required>
+                            <option value="">-- เลือกหน่วยงาน --</option>
+                            <?php foreach ($departments as $dept): ?>
+                                <option value="<?= $dept['id'] ?>">
+                                    <?= esc($dept['short_name']) ?> - <?= esc($dept['name'] ?? 'ไม่ระบุ') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">เลือกหน่วยงานที่ผู้ใช้สังกัด</div>
+                    </div>
 
-            if (confirm(`คุณต้องการเพิกถอนสิทธิ์ "${getUserRoleNames(role)}" จากผู้ใช้นี้ใช่หรือไม่?`)) {
-                revokeRole(userId, role);
-            }
-        });
-    });
+                    <!-- Roles -->
+                    <div class="mb-8">
+                        <label class="form-label">สิทธิ์</label>
+                        <div class="form-check form-check-custom form-check-solid mb-2">
+                            <input class="form-check-input" type="checkbox" name="roles[]" value="Reporter" id="edit_role_reporter" />
+                            <label class="form-check-label" for="edit_role_reporter">
+                                <strong>ผู้รายงาน</strong> - สามารถบันทึกและส่งรายงานความคืบหน้า
+                            </label>
+                        </div>
+                        <div class="form-check form-check-custom form-check-solid mb-2">
+                            <input class="form-check-input" type="checkbox" name="roles[]" value="Approver" id="edit_role_approver" />
+                            <label class="form-check-label" for="edit_role_approver">
+                                <strong>ผู้อนุมัติ</strong> - สามารถอนุมัติรายงาน + สิทธิ์ผู้รายงาน
+                            </label>
+                        </div>
+                        <div class="form-check form-check-custom form-check-solid">
+                            <input class="form-check-input" type="checkbox" name="roles[]" value="Admin" id="edit_role_admin" />
+                            <label class="form-check-label" for="edit_role_admin">
+                                <strong>ผู้ดูแลระบบ</strong> - จัดการผู้ใช้ + สิทธิ์ทั้งหมด
+                            </label>
+                        </div>
+                    </div>
 
-    // Revoke All Roles
-    document.querySelectorAll('.revoke-all-roles-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userId = this.dataset.userId;
+                    <div class="text-center">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-light me-3">ยกเลิก</button>
+                        <button type="submit" class="btn btn-primary" id="update-user-btn">
+                            <span class="indicator-label">
+                                <i class="ki-outline ki-check fs-4 me-2"></i>
+                                บันทึกการแก้ไข
+                            </span>
+                            <span class="indicator-progress">กำลังบันทึก...
+                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                        </button>
+                    </div>
 
-            if (confirm('คุณต้องการเพิกถอนสิทธิ์ทั้งหมดจากผู้ใช้นี้ใช่หรือไม่?')) {
-                revokeAllRoles(userId);
-            }
-        });
-    });
-
-    // Search functionality
-    const searchInput = document.querySelector('[data-kt-user-table-filter="search"]');
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function() {
-            const filter = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#kt_table_users_permissions tbody tr');
-
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(filter) ? '' : 'none';
-            });
-        });
-    }
-});
-
-function grantRole(userId, role) {
-    fetch('<?= base_url('admin/grant-role') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: `user_id=${userId}&role_type=${role}`
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', data.message);
-            location.reload(); // รีโหลดหน้าเพื่อแสดงการเปลี่ยนแปลง
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        showAlert('error', 'เกิดข้อผิดพลาด');
-        console.error('Error:', error);
-    });
-}
-
-function revokeRole(userId, role) {
-    fetch('<?= base_url('admin/revoke-role') ?>', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: `user_id=${userId}&role_type=${role}`
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', data.message);
-            location.reload();
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        showAlert('error', 'เกิดข้อผิดพลาด');
-        console.error('Error:', error);
-    });
-}
-
-function revokeAllRoles(userId) {
-    const roles = ['Reporter', 'Approver', 'Admin'];
-    let promises = [];
-
-    roles.forEach(role => {
-        promises.push(
-            fetch('<?= base_url('admin/revoke-role') ?>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: `user_id=${userId}&role_type=${role}`
-            })
-        );
-    });
-
-    Promise.all(promises).then(() => {
-        showAlert('success', 'เพิกถอนสิทธิ์ทั้งหมดสำเร็จ');
-        location.reload();
-    });
-}
-
-function getUserRoleNames(role) {
-    const roleMap = {
-        'Admin': 'ผู้ดูแลระบบ',
-        'Approver': 'ผู้อนุมัติ',
-        'Reporter': 'ผู้รายงาน'
-    };
-    return roleMap[role] || role;
-}
-
-function showAlert(type, message) {
-    // ใช้ SweetAlert หรือ notification library ที่มีในระบบ
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: type === 'success' ? 'สำเร็จ!' : 'ข้อผิดพลาด!',
-            text: message,
-            icon: type,
-            confirmButtonText: 'ตกลง'
-        });
-    } else {
-        alert(message);
-    }
-}
-</script>
+                    <!-- Hidden field for user ID -->
+                    <input type="hidden" id="edit-user-id" name="user_id" />
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

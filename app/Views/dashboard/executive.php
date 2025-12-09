@@ -283,33 +283,76 @@
                 </div>
             </div>
 
-            <!-- 4. Trend Analysis -->
+            <!-- 6. Deep Analytics -->
             <div class="col-xl-6">
                 <div class="card card-xl-stretch">
                     <div class="card-header border-0 pt-5">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold fs-3 mb-1">📈 เทรนด์ความคืบหน้า</span>
-                            <span class="text-muted fw-semibold fs-7">เปรียบเทียบแต่ละไตรมาส</span>
+                            <span class="card-label fw-bold fs-3 mb-1">🔍 การวิเคราะห์เชิงลึก</span>
+                            <span class="text-muted fw-semibold fs-7">Insights & Analytics</span>
                         </h3>
-                        <div class="card-toolbar">
-                            <select class="form-select form-select-sm" id="trendType">
-                                <option value="quarterly">รายไตรมาส</option>
-                                <option value="monthly">รายเดือน</option>
-                                <option value="yearly">รายปี</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="card-body">
-                        <div id="trendChart" style="height: 400px;"></div>
+
+                        <!-- Key Metrics -->
+                        <div class="row g-3 mb-7">
+                            <div class="col-6">
+                                <div class="bg-light-info px-4 py-3 rounded-2 text-center">
+                                    <div class="fs-2 fw-bold text-info"><?= round($analytics['reporting_stats']['avg_updates_per_kr'] ?? 0, 1) ?></div>
+                                    <div class="fs-7 fw-semibold text-gray-600">เฉลี่ยการอัพเดท/KR</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light-warning px-4 py-3 rounded-2 text-center">
+                                    <div class="fs-2 fw-bold text-warning"><?= round($analytics['reporting_stats']['avg_reporting_delay'] ?? 0) ?></div>
+                                    <div class="fs-7 fw-semibold text-gray-600">วัน เฉลี่ยล่าช้า</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Best Performers -->
+                        <div class="mb-7">
+                            <h6 class="fw-bold text-gray-900 mb-3">🏆 Best Performers</h6>
+                            <?php foreach ($analytics['best_performers'] as $performer): ?>
+                            <div class="d-flex align-items-center mb-5">
+                                <div class="symbol symbol-40px me-4">
+                                    <span class="symbol-label bg-light-success text-success fs-6 fw-bold">
+                                        <?= round($performer['avg_progress']) ?>%
+                                    </span>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="fs-6 fw-bold text-gray-800"><?= $performer['name'] ?></span>
+                                    <span class="fs-7 fw-semibold text-gray-400"><?= $performer['total_key_results'] ?> Key Results</span>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <!-- Insights -->
+                        <div class="separator separator-dashed mb-5"></div>
+                        <div>
+                            <h6 class="fw-bold text-gray-900 mb-3">💡 Insights</h6>
+                            <?php foreach ($analytics['insights'] as $insight): ?>
+                            <div class="notice d-flex bg-light-<?= $insight['type'] === 'success' ? 'success' : ($insight['type'] === 'warning' ? 'warning' : 'info') ?> rounded border-dashed p-4 mb-4">
+                                <div class="d-flex flex-stack flex-grow-1">
+                                    <div class="fw-semibold">
+                                        <div class="fs-6 text-gray-700"><?= $insight['icon'] ?> <?= $insight['message'] ?></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
             </div>
+
+
         </div>
 
-        <div class="row g-5 g-xl-8 mb-5 mb-xl-8">
+        <div class="row g-5 g-xl-12 mb-5 mb-xl-12">
 
             <!-- 5. Risk Analysis & Alerts -->
-            <div class="col-xl-8">
+            <div class="col-xl-12">
                 <div class="card card-xl-stretch">
                     <div class="card-header border-0 pt-5">
                         <h3 class="card-title align-items-start flex-column">
@@ -427,68 +470,7 @@
                 </div>
             </div>
 
-            <!-- 6. Deep Analytics -->
-            <div class="col-xl-4">
-                <div class="card card-xl-stretch">
-                    <div class="card-header border-0 pt-5">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold fs-3 mb-1">🔍 การวิเคราะห์เชิงลึก</span>
-                            <span class="text-muted fw-semibold fs-7">Insights & Analytics</span>
-                        </h3>
-                    </div>
-                    <div class="card-body">
 
-                        <!-- Key Metrics -->
-                        <div class="row g-3 mb-7">
-                            <div class="col-6">
-                                <div class="bg-light-info px-4 py-3 rounded-2 text-center">
-                                    <div class="fs-2 fw-bold text-info"><?= round($analytics['reporting_stats']['avg_updates_per_kr'] ?? 0, 1) ?></div>
-                                    <div class="fs-7 fw-semibold text-gray-600">เฉลี่ยการอัพเดท/KR</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-light-warning px-4 py-3 rounded-2 text-center">
-                                    <div class="fs-2 fw-bold text-warning"><?= round($analytics['reporting_stats']['avg_reporting_delay'] ?? 0) ?></div>
-                                    <div class="fs-7 fw-semibold text-gray-600">วัน เฉลี่ยล่าช้า</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Best Performers -->
-                        <div class="mb-7">
-                            <h6 class="fw-bold text-gray-900 mb-3">🏆 Best Performers</h6>
-                            <?php foreach ($analytics['best_performers'] as $performer): ?>
-                            <div class="d-flex align-items-center mb-5">
-                                <div class="symbol symbol-40px me-4">
-                                    <span class="symbol-label bg-light-success text-success fs-6 fw-bold">
-                                        <?= round($performer['avg_progress']) ?>%
-                                    </span>
-                                </div>
-                                <div class="d-flex flex-column">
-                                    <span class="fs-6 fw-bold text-gray-800"><?= $performer['name'] ?></span>
-                                    <span class="fs-7 fw-semibold text-gray-400"><?= $performer['total_key_results'] ?> Key Results</span>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <!-- Insights -->
-                        <div class="separator separator-dashed mb-5"></div>
-                        <div>
-                            <h6 class="fw-bold text-gray-900 mb-3">💡 Insights</h6>
-                            <?php foreach ($analytics['insights'] as $insight): ?>
-                            <div class="notice d-flex bg-light-<?= $insight['type'] === 'success' ? 'success' : ($insight['type'] === 'warning' ? 'warning' : 'info') ?> rounded border-dashed p-4 mb-4">
-                                <div class="d-flex flex-stack flex-grow-1">
-                                    <div class="fw-semibold">
-                                        <div class="fs-6 text-gray-700"><?= $insight['icon'] ?> <?= $insight['message'] ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Timeline และกิจกรรมสำคัญ -->

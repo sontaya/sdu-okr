@@ -4,7 +4,6 @@
 var ExecutiveDashboard = function() {
 
     // Private variables (Mock version - fixed values)
-    var trendChart;
     var refreshInterval;
     var currentYear = '2568';
     var currentQuarter = '4';
@@ -42,214 +41,6 @@ var ExecutiveDashboard = function() {
         $('#trendType').on('change', function() {
             loadTrendChart($(this).val());
         });
-    };
-
-    var initTrendChart = function() {
-        var element = document.getElementById('trendChart');
-
-        if (!element) {
-            return;
-        }
-
-        var height = parseInt(KTUtil.css(element, 'height'));
-
-        var options = {
-            series: [],
-            chart: {
-                fontFamily: 'inherit',
-                type: 'line',
-                height: height,
-                toolbar: {
-                    show: false
-                },
-                animations: {
-                    enabled: true,
-                    easing: 'easeinout',
-                    speed: 800
-                }
-            },
-            plotOptions: {},
-            legend: {
-                show: true,
-                position: 'bottom',
-                horizontalAlign: 'center',
-                fontFamily: 'inherit',
-                fontWeight: '500',
-                fontSize: '13px',
-                offsetY: 10
-            },
-            dataLabels: {
-                enabled: false
-            },
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.4,
-                    opacityTo: 0.1,
-                    stops: [0, 90, 100]
-                }
-            },
-            stroke: {
-                curve: 'smooth',
-                show: true,
-                width: 3,
-                colors: undefined
-            },
-            xaxis: {
-                categories: [],
-                axisBorder: {
-                    show: false,
-                },
-                axisTicks: {
-                    show: false
-                },
-                labels: {
-                    style: {
-                        colors: KTApp.getSettings()['colors']['gray']['gray-500'],
-                        fontSize: '13px'
-                    }
-                }
-            },
-            yaxis: {
-                max: 100,
-                min: 0,
-                labels: {
-                    style: {
-                        colors: KTApp.getSettings()['colors']['gray']['gray-500'],
-                        fontSize: '13px'
-                    },
-                    formatter: function(val) {
-                        return val + '%';
-                    }
-                }
-            },
-            states: {
-                normal: {
-                    filter: {
-                        type: 'none',
-                        value: 0
-                    }
-                },
-                hover: {
-                    filter: {
-                        type: 'none',
-                        value: 0
-                    }
-                },
-                active: {
-                    allowMultipleDataPointsSelection: false,
-                    filter: {
-                        type: 'none',
-                        value: 0
-                    }
-                }
-            },
-            tooltip: {
-                style: {
-                    fontSize: '12px'
-                },
-                y: {
-                    formatter: function(val) {
-                        return val + '%';
-                    }
-                }
-            },
-            colors: [
-                KTApp.getSettings()['colors']['theme']['base']['primary'],
-                KTApp.getSettings()['colors']['theme']['base']['success'],
-                KTApp.getSettings()['colors']['theme']['base']['warning'],
-                KTApp.getSettings()['colors']['theme']['base']['info'],
-                KTApp.getSettings()['colors']['theme']['base']['danger']
-            ],
-            grid: {
-                borderColor: KTApp.getSettings()['colors']['gray']['gray-200'],
-                strokeDashArray: 4,
-                yaxis: {
-                    lines: {
-                        show: true
-                    }
-                }
-            }
-        };
-
-        trendChart = new ApexCharts(element, options);
-        trendChart.render();
-
-        // Load initial data for Q4 2568 (Mock version)
-        loadTrendChart('quarterly');
-    };
-
-    var loadTrendChart = function(type) {
-        if (!trendChart) return;
-
-        // Show loading
-        KTApp.showPageLoading();
-
-        $.ajax({
-            url: '/dashboard/api/trends',
-            method: 'GET',
-            data: {
-                year: currentYear,
-                type: type
-            },
-            success: function(response) {
-                if (response.success && response.data) {
-                    updateTrendChart(response.data, type);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading trend data:', error);
-                Swal.fire({
-                    text: "เกิดข้อผิดพลาดในการโหลดข้อมูลกราฟ",
-                    icon: "error",
-                    buttonsStyling: false,
-                    confirmButtonText: "ตกลง!",
-                    customClass: {
-                        confirmButton: "btn btn-primary"
-                    }
-                });
-            },
-            complete: function() {
-                KTApp.hidePageLoading();
-            }
-        });
-    };
-
-    var updateTrendChart = function(data, type) {
-        if (!trendChart || !data) return;
-
-        // Process mock data for ApexCharts
-        var categories = ['Q1 2568', 'Q2 2568', 'Q3 2568', 'Q4 2568'];
-        var seriesData = {};
-
-        // Group data by objective group
-        data.forEach(function(item) {
-            if (!seriesData[item.objective_group_name]) {
-                seriesData[item.objective_group_name] = [];
-            }
-        });
-
-        // Create series data from grouped data
-        var uniqueGroups = [...new Set(data.map(item => item.objective_group_name))];
-        var series = [];
-
-        uniqueGroups.forEach(function(groupName) {
-            var groupData = data.filter(item => item.objective_group_name === groupName);
-            series.push({
-                name: groupName,
-                data: groupData.map(item => parseFloat(item.avg_progress || 0))
-            });
-        });
-
-        // Update chart
-        trendChart.updateOptions({
-            xaxis: {
-                categories: categories
-            }
-        });
-
-        trendChart.updateSeries(series);
     };
 
     var refreshDashboard = function(forceRefresh = false) {
@@ -371,7 +162,6 @@ var ExecutiveDashboard = function() {
     return {
         init: function() {
             initSelectors();
-            initTrendChart();
             initAutoRefresh();
         },
 
@@ -383,9 +173,7 @@ var ExecutiveDashboard = function() {
             if (refreshInterval) {
                 clearInterval(refreshInterval);
             }
-            if (trendChart) {
-                trendChart.destroy();
-            }
+
         }
     };
 }();

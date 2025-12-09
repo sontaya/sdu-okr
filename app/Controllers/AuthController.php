@@ -59,7 +59,10 @@ class AuthController extends BaseController
                     'lasted_ip' => $ip
                 ]);
 
-                return $this->response->setJSON(['status' => 'success']);
+                // ✅ เพิ่มส่วนนี้ - เรียก getRedirectUrlByRole และส่ง redirect_url กลับไป
+                $redirectUrl = $this->getRedirectUrlByRole($user['id'], $user['department_id']);
+                return $this->response->setJSON(['status' => 'success', 'redirect_url' => $redirectUrl]);
+
             } else {
                 return $this->response->setJSON([
                     'status' => 'error',
@@ -73,7 +76,6 @@ class AuthController extends BaseController
             ]);
         }
     }
-
 
     public function login()
     {
@@ -98,6 +100,7 @@ class AuthController extends BaseController
 
             // เพิ่มการ initialize user permissions
             $this->initializeUserPermissions($user['id'], $user['department_id']);
+            log_message('debug', '🔍 User Roles after init: ' . json_encode(session('user_roles')));
 
             $ip = get_client_ip();
             $now = date('Y-m-d H:i:s');
@@ -107,13 +110,55 @@ class AuthController extends BaseController
                 'lasted_ip' => $ip
             ]);
 
-            return $this->response->setJSON(['status' => 'success']);
+            // ✅ เพิ่มส่วนนี้ - เรียก getRedirectUrlByRole และส่ง redirect_url กลับไป
+            $redirectUrl = $this->getRedirectUrlByRole($user['id'], $user['department_id']);
+            log_message('debug', '🎯 Redirect URL determined: ' . $redirectUrl);
+
+            $response = ['status' => 'success', 'redirect_url' => $redirectUrl];
+            log_message('debug', '📤 Sending response: ' . json_encode($response));
+
+            return $this->response->setJSON($response);
+
         } else {
             return $this->response->setJSON([
                 'status' => 'error',
                 'message' => 'ไม่พบผู้ใช้งาน'
             ]);
         }
+    }
+
+
+    private function getRedirectUrlByRole($userId, $departmentId)
+    {
+        $db = \Config\Database::connect();
+
+        // ดึงสิทธิ์ของผู้ใช้
+        $roles = $db->table('department_user_roles')
+            ->select('role_type')
+            ->where('user_id', $userId)
+            ->where('department_id', $departmentId)
+            ->get()
+            ->getResultArray();
+
+        $roleTypes = array_column($roles, 'role_type');
+
+        // 1. Admin หรือ StrategicViewer ไปที่ Executive Dashboard
+        if (in_array('Admin', $roleTypes) || in_array('StrategicViewer', $roleTypes)) {
+            return base_url('dashboard');
+        }
+
+        // 2. ✅ (ใหม่) Approver (ที่ไม่ใช่ Admin) ไปที่ Department Dashboard
+        if (in_array('Approver', $roleTypes)) {
+            return base_url('dashboard/department');
+        }
+
+        // 3. Reporter (ที่ไม่มีสิทธิ์สูงกว่า) ไปที่ Key Results
+        if (in_array('Reporter', $roleTypes)) {
+            return base_url('keyresult/list');
+        }
+
+        // กรณีอื่นๆ (ถ้ามี) ใช้ default executive dashboard
+        return base_url('dashboard');
     }
 
     // initialize user permissions

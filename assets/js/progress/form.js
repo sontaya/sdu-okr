@@ -421,18 +421,78 @@ var KTProgressForm = function () {
 
                 console.log('Submit progress button clicked');
 
-                // ✅ เพิ่ม delay เช่นเดียวกัน
+                // ตรวจสอบว่าเป็น edit mode และมี progressId
+                if (!isEditMode || !progressId) {
+                    console.error('Not in edit mode or missing progressId');
+                    return;
+                }
+
+                // แสดง loading
+                submitProgressButton.setAttribute('data-kt-indicator', 'on');
+                submitProgressButton.disabled = true;
+
+                // เพิ่ม delay เช่นเดียวกัน
                 setTimeout(function() {
                     syncQuillContent();
                     selectAllEntriesBeforeSubmit();
 
-                    // เปลี่ยนสถานะเป็น submitted แล้วส่งฟอร์ม
-                    const statusSelect = document.querySelector('#progress_status_select');
-                    if (statusSelect) {
-                        statusSelect.value = 'submitted';
-                        console.log('Status changed to submitted');
-                    }
-                    form.submit();
+                    // ใช้ AJAX แทน form.submit()
+                    fetch(`${BASE_URL}progress/submit/${progressId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            // ส่งข้อมูลที่จำเป็นถ้ามี
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // แสดงข้อความสำเร็จ
+                            Swal.fire({
+                                text: data.message || "ส่งรายงานเพื่อขออนุมัติสำเร็จ",
+                                icon: "success",
+                                buttonsStyling: false,
+                                confirmButtonText: "ตกลง",
+                                customClass: {
+                                    confirmButton: "btn fw-bold btn-primary",
+                                }
+                            }).then(function () {
+                                // กลับไปหน้า view
+                                window.location.href = `${BASE_URL}progress/view/${keyResultId}`;
+                            });
+                        } else {
+                            // แสดงข้อความผิดพลาด
+                            Swal.fire({
+                                text: data.message || "เกิดข้อผิดพลาด",
+                                icon: "error",
+                                buttonsStyling: false,
+                                confirmButtonText: "ตกลง",
+                                customClass: {
+                                    confirmButton: "btn fw-bold btn-primary",
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Submit error:', error);
+                        Swal.fire({
+                            text: "เกิดข้อผิดพลาดในการส่งรายงาน",
+                            icon: "error",
+                            buttonsStyling: false,
+                            confirmButtonText: "ตกลง",
+                            customClass: {
+                                confirmButton: "btn fw-bold btn-primary",
+                            }
+                        });
+                    })
+                    .finally(function() {
+                        // ปิด loading
+                        submitProgressButton.removeAttribute('data-kt-indicator');
+                        submitProgressButton.disabled = false;
+                    });
                 }, 200);
             });
         }

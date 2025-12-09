@@ -191,6 +191,7 @@ if (!function_exists('canViewProgressHistory')) {
      * ตรวจสอบว่าผู้ใช้สามารถดูประวัติความคืบหน้าได้หรือไม่
      * Leader: ดูได้ทั้งหมด (รวม Draft, Submitted)
      * CoWorking: ดูได้เฉพาะที่ Approved
+     * ✅ Admin/StrategicViewer: ดูได้ทั้งหมด
      */
     function canViewProgressHistory($keyResultId, $userId = null)
     {
@@ -198,18 +199,29 @@ if (!function_exists('canViewProgressHistory')) {
         $departmentId = session('department');
 
         if (!$userId || !$departmentId) {
-            return ['can_view' => false, 'role' => null];
+            return ['can_view' => false, 'role' => null, 'can_see_all_status' => false, 'can_see_approved_only' => false];
         }
 
-        // ✅ ดึงบทบาทใน Key Result
+        // ✅ เพิ่ม: ตรวจสอบสิทธิ์พิเศษสำหรับ Admin และ StrategicViewer ก่อน
+        // สอง Role นี้สามารถดูประวัติของทุก Key Result ได้
+        if (hasRole('Admin') || isStrategicViewer($userId, $departmentId)) {
+            return [
+                'can_view' => true,
+                'role' => 'StrategicViewer', // กำหนด role พิเศษเพื่อบ่งบอก
+                'can_see_all_status' => true, // สามารถเห็นได้ทุกสถานะ
+                'can_see_approved_only' => false
+            ];
+        }
+
+        // --- โค้ดเดิมสำหรับผู้ใช้ระดับหน่วยงาน ---
         $keyResultRole = getKeyResultRole($keyResultId, $departmentId);
 
         if (!$keyResultRole) {
-            return ['can_view' => false, 'role' => null];
+            return ['can_view' => false, 'role' => null, 'can_see_all_status' => false, 'can_see_approved_only' => false];
         }
 
-        // ✅ ตรวจสอบสิทธิ์ผู้ใช้
-        $hasPermission = hasRole('Reporter') || hasRole('Approver') || hasRole('Admin');
+        // ✅ ตรวจสอบสิทธิ์ผู้ใช้ (ตัด Admin ออก เพราะเช็คไปแล้ว)
+        $hasPermission = hasRole('Reporter') || hasRole('Approver');
 
         return [
             'can_view' => $hasPermission,
@@ -219,7 +231,6 @@ if (!function_exists('canViewProgressHistory')) {
         ];
     }
 }
-
 if (!function_exists('isAdmin')) {
     /**
      * ตรวจสอบว่าผู้ใช้เป็น Admin หรือไม่
@@ -489,6 +500,11 @@ if (!function_exists('canViewKeyResult')) {
             return true;
         }
 
+        // StrategicViewer ดูได้ทุก Key Result
+        if (isStrategicViewer($userId, $departmentId)) {
+            return true;
+        }
+
         $db = \Config\Database::connect();
 
         // ตรวจสอบว่าหน่วยงานมีส่วนเกี่ยวข้องกับ Key Result นี้หรือไม่
@@ -604,5 +620,128 @@ if (!function_exists('refreshUserPermissions')) {
         ]);
 
         return true;
+    }
+}
+
+
+if (!function_exists('isStrategicViewer')) {
+    /**
+     * ตรวจสอบว่าผู้ใช้เป็น Strategic Viewer หรือไม่
+     */
+    function isStrategicViewer($userId = null, $departmentId = null)
+    {
+        $userId = $userId ?? session('user_id');
+        $departmentId = $departmentId ?? session('department');
+
+        if (!$userId || !$departmentId) {
+            return false;
+        }
+
+        $db = \Config\Database::connect();
+
+        $result = $db->table('department_user_roles')
+            ->where('user_id', $userId)
+            ->where('department_id', $departmentId)
+            ->where('role_type', 'StrategicViewer')
+            ->get()
+            ->getRowArray();
+
+        return !empty($result);
+    }
+}
+
+if (!function_exists('canSeeDashboardMenu')) {
+    /**
+     * ตรวจสอบว่าสามารถเห็น Dashboard menu ได้หรือไม่
+     * เฉพาะ Admin และ StrategicViewer เท่านั้น
+     */
+    function canSeeDashboardMenu($userId = null, $departmentId = null)
+    {
+        $userId = $userId ?? session('user_id');
+        $departmentId = $departmentId ?? session('department');
+
+        $roles = getUserRoles($userId, $departmentId);
+
+        return (in_array('Admin', $roles) || in_array('StrategicViewer', $roles));
+    }
+}
+
+    if (!function_exists('isOnlyReporter')) {
+        /**
+         * ตรวจสอบว่าควรไป Key Results หรือไม่
+         * Reporter (ไม่ว่าจะมี Approver ผสมหรือไม่) แต่ไม่ใช่ Admin/StrategicViewer
+         */
+        function shouldGoToKeyResults($userId = null, $departmentId = null)
+        {
+            $userId = $userId ?? session('user_id');
+            $departmentId = $departmentId ?? session('department');
+
+            $roles = getUserRoles($userId, $departmentId);
+
+            // ถ้าเป็น Admin หรือ StrategicViewer → ไป Dashboard
+            if (in_array('Admin', $roles) || in_array('StrategicViewer', $roles)) {
+                return false;
+            }
+
+            // ถ้ามี Reporter → ไป Key Results
+            return in_array('Reporter', $roles);
+        }
+    }
+
+if (!function_exists('canViewStrategicDashboard')) {
+    /**
+     * ตรวจสอบว่าสามารถเข้าถึง Strategic Dashboard ได้หรือไม่
+     * เงื่อนไข: Strategic Viewer หรือ Admin
+     */
+    function canViewStrategicDashboard($userId = null)
+    {
+        $userId = $userId ?? session('user_id');
+
+        // Admin สามารถเข้าถึงได้เสมอ
+        if (hasRole('Admin')) {
+            return true;
+        }
+
+        // ตรวจสอบ Strategic Viewer role
+        return isStrategicViewer($userId);
+    }
+}
+
+if (!function_exists('getStrategicViewPermissions')) {
+    /**
+     * ดึงข้อมูลสิทธิ์การดู Strategic Dashboard
+     */
+    function getStrategicViewPermissions($userId = null)
+    {
+        $userId = $userId ?? session('user_id');
+
+        return [
+            'can_view_all_departments' => canViewStrategicDashboard($userId),
+            'can_view_draft_reports' => hasRole('Admin'), // เฉพาะ Admin เท่านั้น
+            'can_export_data' => canViewStrategicDashboard($userId),
+            'can_view_detailed_progress' => true, // ดูได้แต่เฉพาะที่ approved
+            'is_strategic_viewer' => isStrategicViewer($userId),
+            'is_admin' => hasRole('Admin')
+        ];
+    }
+}
+
+if (!function_exists('grantStrategicViewerRole')) {
+    /**
+     * เพิ่มสิทธิ์ Strategic Viewer ให้ผู้ใช้
+     */
+    function grantStrategicViewerRole($userId, $departmentId, $grantedBy = null)
+    {
+        return grantDepartmentRole($userId, $departmentId, 'StrategicViewer', $grantedBy);
+    }
+}
+
+if (!function_exists('revokeStrategicViewerRole')) {
+    /**
+     * เพิกถอนสิทธิ์ Strategic Viewer
+     */
+    function revokeStrategicViewerRole($userId, $departmentId)
+    {
+        return revokeDepartmentRole($userId, $departmentId, 'StrategicViewer');
     }
 }

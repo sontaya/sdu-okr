@@ -62,7 +62,13 @@
 
                             <!--begin::Title-->
                             <h1 class="text-gray-600 text-hover-goal-<?= $og_id ?> fs-7 fw-bold mb-2">
-                            KR: <?= esc($keyresult['key_result_name'] ?? 'Key Result Name') ?>
+                            KR: <?= esc($keyresult['key_result_template_name']) ?>
+                            </h1>
+                            <!--end::Title-->
+
+                            <!--begin::Title-->
+                            <h1 class="text-gray-600 text-hover-goal-<?= $og_id ?> fs-7 fw-bold mb-2">
+                            KR<?= esc($keyresult['key_result_year']) ?>: <?= esc($keyresult['key_result_name'] ?? 'Key Result Name') ?>
                             </h1>
                             <!--end::Title-->
 

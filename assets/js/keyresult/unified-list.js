@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         status: ''
     };
 
-    // Initialize DataTable (เดิม)
+    // Initialize DataTable
     const table = $('#kt_keyresults_table').DataTable({
         responsive: true,
         pageLength: 10,
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     });
 
-    // Search functionality (เดิม)
+    // Search functionality
     const searchInput = document.querySelector('[data-kt-keyresults-filter="search"]');
     if (searchInput) {
         searchInput.addEventListener('keyup', function() {
@@ -136,9 +136,201 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // เพิ่ม debug button (temporary)
     console.log('🔍 To debug current state, run: debugCurrentState()');
+
+
+    // Submit Progress Function
+    function submitProgress(progressId) {
+        if (!progressId) {
+            console.error('❌ No progress ID provided');
+            return;
+        }
+
+        console.log('📤 Submitting progress:', progressId);
+
+        // แสดง loading
+        Swal.fire({
+            title: 'กำลังส่งรายงาน...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // ✅ เรียก API ผาน fetch
+        fetch(`${BASE_URL}progress/submit/${progressId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('📤 Submit response:', data);
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'สำเร็จ!',
+                    text: data.message || 'ส่งรายงานเพื่อขออนุมัติสำเร็จ',
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง'
+                }).then(() => {
+                    // ✅ Reload หน้าเพื่ออัพเดทสถานะ
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: data.message || 'ไม่สามารถส่งรายงานได้',
+                    icon: 'error',
+                    confirmButtonText: 'ตกลง'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('❌ Submit error:', error);
+
+            Swal.fire({
+                title: 'เกิดข้อผิดพลาด!',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+                icon: 'error',
+                confirmButtonText: 'ตกลง'
+            });
+        });
+    }
+
+    // Approve Progress Function
+    function approveProgress(progressId) {
+        if (!progressId) {
+            console.error('❌ No progress ID provided');
+            return;
+        }
+
+        console.log('✅ Approving progress:', progressId);
+
+        // แสดง loading
+        Swal.fire({
+            title: 'กำลังอนุมัติ...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // ✅ เรียก API ผ่าน fetch
+        fetch(`${BASE_URL}progress/approve/${progressId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Approve response:', data);
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'สำเร็จ!',
+                    text: data.message || 'อนุมัติรายงานสำเร็จ',
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: data.message || 'ไม่สามารถอนุมัติรายงานได้',
+                    icon: 'error',
+                    confirmButtonText: 'ตกลง'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('❌ Approve error:', error);
+
+            Swal.fire({
+                title: 'เกิดข้อผิดพลาด!',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+                icon: 'error',
+                confirmButtonText: 'ตกลง'
+            });
+        });
+    }
+
+    // Reject Progress Function
+    function rejectProgress(progressId, reason) {
+        if (!progressId || !reason) {
+            console.error('❌ Missing progress ID or reason');
+            return;
+        }
+
+        console.log('❌ Rejecting progress:', progressId, 'Reason:', reason);
+
+        // แสดง loading
+        Swal.fire({
+            title: 'กำลังปฏิเสธ...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // ✅ เรียก API ผ่าน fetch
+        fetch(`${BASE_URL}progress/reject/${progressId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                reject_reason: reason
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('❌ Reject response:', data);
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'สำเร็จ!',
+                    text: data.message || 'ปฏิเสธรายงานสำเร็จ',
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: data.message || 'ไม่สามารถปฏิเสธรายงานได้',
+                    icon: 'error',
+                    confirmButtonText: 'ตกลง'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('❌ Reject error:', error);
+
+            Swal.fire({
+                title: 'เกิดข้อผิดพลาด!',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+                icon: 'error',
+                confirmButtonText: 'ตกลง'
+            });
+        });
+    }
+
+    // ✅ Export functions เผื่อต้องการใช้ที่อื่น
+    window.submitProgress = submitProgress;
+    window.approveProgress = approveProgress;
+    window.rejectProgress = rejectProgress;
     window.debugCurrentState = debugCurrentState;
 
-    // Submit Report functionality (เดิม)
+    // Submit Report functionality
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('submit-report-btn')) {
             e.preventDefault();
@@ -160,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Approve Report functionality (เดิม)
+    // Approve Report functionality
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('approve-report-btn')) {
             e.preventDefault();
@@ -182,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Reject Report functionality (เดิม)
+    // Reject Report functionality
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('reject-report-btn')) {
             e.preventDefault();
@@ -217,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Master checkbox functionality (เดิม)
+    // Master checkbox functionality
     const masterCheckbox = document.querySelector('[data-kt-check="true"]');
     if (masterCheckbox) {
         masterCheckbox.addEventListener('click', function() {

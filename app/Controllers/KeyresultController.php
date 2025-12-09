@@ -146,6 +146,11 @@ class KeyresultController extends TemplateController
     {
         $startTime = microtime(true);
 
+        // ตรวจสอบสิทธิ์
+        if (!canViewKeyResult($id) && !canViewStrategicDashboard()) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึง Key Result นี้');
+        }
+
         $model = new KeyresultModel();
         $entryModel = new KeyResultEntryModel();
         $fileModel = new KeyResultFileModel();
@@ -164,8 +169,13 @@ class KeyresultController extends TemplateController
        // หน่วยงานที่เกี่ยวข้อง
        $departments = $model->getDepartmentsByKeyResult($id);
 
-       // ✅ ดึงข้อมูล entries พร้อมไฟล์และ tags
+        // ดึงข้อมูล entries พร้อมตรวจสอบสิทธิ์
        $entries = $this->getEntriesWithDetails($id);
+
+        // เพิ่มข้อมูลสิทธิ์การใช้งาน
+        $this->data['can_manage_entries'] = canManageEntries($id);
+        $this->data['user_role'] = getKeyResultRole($id, session('department'));
+
 
         $this->data['title'] = 'รายละเอียด Key Result';
         $this->data['cssSrc'] = ['assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css'];
@@ -175,7 +185,7 @@ class KeyresultController extends TemplateController
         ];
         $this->data['keyresult'] = $keyresult;
         $this->data['departments'] = $departments;
-        $this->data['entries'] = $entries; // ✅ ส่งข้อมูล entries
+        $this->data['entries'] = $entries;
         $this->contentTemplate = 'keyresult/view';
 
         $endTime = microtime(true);
@@ -185,7 +195,7 @@ class KeyresultController extends TemplateController
         return $this->render();
     }
 
-    // ✅ เพิ่มฟังก์ชันช่วยในการดึงข้อมูล entries พร้อมรายละเอียด
+    // ฟังก์ชันช่วยในการดึงข้อมูล entries พร้อมรายละเอียด
     private function getEntriesWithDetails($keyResultId)
     {
         $db = \Config\Database::connect();
@@ -201,9 +211,15 @@ class KeyresultController extends TemplateController
                 COUNT(krf.id) as file_count
             ')
             ->join('key_result_files krf', 'kre.id = krf.entry_id', 'left')
-            ->where('kre.key_result_id', $keyResultId)
-            ->groupBy('kre.id')
-            ->orderBy('kre.created_date', 'DESC');
+            ->where('kre.key_result_id', $keyResultId);
+
+            // ถ้าไม่มีสิทธิ์จัดการ entries ให้แสดงเฉพาะ published
+            if (!canManageEntries($keyResultId)) {
+                $builder->where('kre.entry_status', 'published');
+            }
+
+        $builder->groupBy('kre.id')
+                ->orderBy('kre.created_date', 'DESC');
 
         $entries = $builder->get()->getResultArray();
 

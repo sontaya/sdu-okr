@@ -1,0 +1,569 @@
+<?php
+namespace App\Controllers;
+
+use App\Models\KeyresultModel;
+use App\Models\ProgressModel;
+use App\Models\UserModel;
+
+class StrategicController extends TemplateController
+{
+    protected $allowed = [];
+    private $keyresultModel;
+    private $progressModel;
+
+    public function initController($request, $response, $logger)
+    {
+        parent::initController($request, $response, $logger);
+
+        // ตรวจสอบสิทธิ์ Strategic Viewer
+        if (!canViewStrategicDashboard()) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
+        $this->keyresultModel = new KeyresultModel();
+        $this->progressModel = new ProgressModel();
+
+        helper(['permission']);
+    }
+
+    /**
+     * หน้าแรก Strategic Dashboard - แสดงภาพรวมระดับมหาวิทยาลัย
+     */
+    public function index()
+    {
+        return $this->overview();
+    }
+
+    /**
+     * Strategic Overview - แสดง Key Results ทั้งหมดพร้อม Filter
+     */
+    public function overview()
+    {
+        // รับ parameters จาก URL
+        $filters = [
+            'year' => $this->request->getGet('year') ?? '2568',
+            'objective_group_id' => $this->request->getGet('group') ?? null,
+            'department_id' => $this->request->getGet('dept') ?? null,
+            'progress_status' => $this->request->getGet('status') ?? null,
+            'role_type' => $this->request->getGet('role') ?? null,
+            'reporting_period_id' => $this->request->getGet('period') ?? null,
+            'keyword' => $this->request->getGet('search') ?? null
+        ];
+
+        // ดึงข้อมูล Key Results แบบ Strategic View
+        $keyresults = $this->getStrategicKeyResults($filters);
+
+        // สร้าง Summary Statistics
+        $stats = $this->generateStrategicStats($keyresults, $filters);
+
+        // ดึงข้อมูลสำหรับ Filter Options
+        $filterOptions = $this->getFilterOptions();
+
+        // ข้อมูลสำหรับ View
+        $this->data = array_merge($this->data, [
+            'title' => 'Strategic Overview - OKR Dashboard',
+            'keyresults' => $keyresults,
+            'stats' => $stats,
+            'filters' => $filters,
+            'filter_options' => $filterOptions,
+            'strategic_permissions' => getStrategicViewPermissions(),
+            'cssSrc' => [
+                'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css',
+                'assets/css/strategic-dashboard.css'
+            ],
+            'jsSrc' => [
+                'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.js',
+                'assets/js/strategic/overview.js'
+            ]
+        ]);
+
+        $this->contentTemplate = 'strategic/overview';
+        return $this->render();
+    }
+
+
+/**
+ * ดึงข้อมูล Key Results สำหรับ Strategic View - แสดงแค่ 1 รายการต่อ Key Result
+ */
+private function getStrategicKeyResults($filters = [])
+{
+    $db = \Config\Database::connect();
+
+    // Main query - ดึงข้อมูล Key Results โดยไม่ JOIN กับ departments
+    $builder = $db->table('objective_groups og')
+        ->select('
+            og.id AS og_id,
+            og.name AS og_name,
+            obj.id AS objective_id,
+            obj.sequence_no AS objective_sequence,
+            CONCAT(obj.sequence_no, ". ", obj.name) AS objective_name,
+            kt.id AS key_result_template_id,
+            kt.sequence_no AS key_result_template_sequence,
+            CONCAT(obj.sequence_no, ".", kt.sequence_no, " ", kt.name) AS key_result_template_name,
+            kr.id AS key_result_id,
+            kr.key_result_year,
+            kr.sequence_no AS key_result_sequence,
+            CONCAT(kr.sequence_no, ". ", kr.name) AS key_result_name,
+            kr.target_value,
+            kr.target_unit
+        ')
+        ->join('objectives obj', 'og.id = obj.objective_group_id')
+        ->join('key_result_templates kt', 'kt.objective_id = obj.id')
+        ->join('key_results kr', 'kr.key_result_template_id = kt.id');
+
+    // Apply basic filters
+    if (!empty($filters['year'])) {
+        $builder->where('kr.key_result_year', $filters['year']);
+    }
+
+    if (!empty($filters['objective_group_id'])) {
+        $builder->where('og.id', $filters['objective_group_id']);
+    }
+
+    if (!empty($filters['keyword'])) {
+        $keyword = $filters['keyword'];
+        $builder->groupStart()
+            ->like('kr.name', $keyword)
+            ->orLike('kt.name', $keyword)
+            ->orLike('obj.name', $keyword)
+            ->groupEnd();
+    }
+
+    // Order by
+    $builder->orderBy('og.id')
+            ->orderBy('obj.sequence_no')
+            ->orderBy('kt.sequence_no')
+            ->orderBy('kr.sequence_no');
+
+    $results = $builder->get()->getResultArray();
+
+    // Post-process: เพิ่มข้อมูล Departments และ Progress
+    $processedResults = [];
+
+    foreach ($results as $item) {
+        // 1. ดึงข้อมูล departments ที่เกี่ยวข้อง
+        $departments = $this->getKeyResultDepartments($item['key_result_id']);
+        $item['departments'] = $departments;
+
+        // 2. กำหนด default role (Leader มีอันดับสูงกว่า)
+        $primaryRole = 'ไม่ระบุ';
+        if (!empty($departments)) {
+            foreach ($departments as $dept) {
+                if ($dept['role'] == 'Leader') {
+                    $primaryRole = 'Leader';
+                    break;
+                }
+                if ($primaryRole === 'ไม่ระบุ') {
+                    $primaryRole = $dept['role'];
+                }
+            }
+        }
+        $item['key_result_dep_role'] = $primaryRole;
+
+        // 3. ดึงข้อมูล progress ล่าสุด
+        $latestProgress = $this->getLatestProgress($item['key_result_id']);
+
+        if ($latestProgress) {
+            $item['latest_progress_id'] = $latestProgress['id'];
+            $item['progress_value'] = $latestProgress['progress_value'];
+            $item['progress_percentage'] = $latestProgress['progress_percentage'];
+            $item['progress_status'] = $latestProgress['status'];
+            $item['progress_created_date'] = $latestProgress['created_date'];
+            $item['progress_updated_date'] = $latestProgress['updated_date'];
+            $item['submitted_date'] = $latestProgress['submitted_date'];
+            $item['approved_date'] = $latestProgress['approved_date'];
+            $item['quarter_name'] = $latestProgress['quarter_name'];
+            $item['reporting_year'] = $latestProgress['year'];
+            $item['progress_creator_name'] = $latestProgress['full_name'];
+        } else {
+            // กรณีไม่มี progress
+            $item['latest_progress_id'] = null;
+            $item['progress_value'] = null;
+            $item['progress_percentage'] = null;
+            $item['progress_status'] = 'no_report';
+            $item['progress_created_date'] = null;
+            $item['progress_updated_date'] = null;
+            $item['submitted_date'] = null;
+            $item['approved_date'] = null;
+            $item['quarter_name'] = null;
+            $item['reporting_year'] = null;
+            $item['progress_creator_name'] = null;
+        }
+
+        // 4. คำนวณ days since last update
+        if ($item['progress_updated_date']) {
+            $item['days_since_update'] = $this->calculateDaysSince($item['progress_updated_date']);
+        } else {
+            $item['days_since_update'] = null;
+        }
+
+        // 5. เพิ่ม reporting period text
+        if ($item['quarter_name'] && $item['reporting_year']) {
+            $item['reporting_period_text'] = $item['quarter_name'] . ' ' . $item['reporting_year'];
+        } else {
+            $item['reporting_period_text'] = '-';
+        }
+
+        // 6. ดึงจำนวน entries ที่ published
+        $item['published_entries_count'] = $this->getPublishedEntriesCount($item['key_result_id']);
+
+        // 7. Strategic View specific data
+        $item['can_view_details'] = true;
+
+        // 8. Apply filters ที่ต้องใช้ข้อมูลที่ process แล้ว
+        $shouldInclude = true;
+
+        // Department filter
+        if (!empty($filters['department_id'])) {
+            $hasDept = false;
+            foreach ($departments as $dept) {
+                if ($dept['department_id'] == $filters['department_id']) {
+                    $hasDept = true;
+                    break;
+                }
+            }
+            if (!$hasDept) $shouldInclude = false;
+        }
+
+        // Role filter
+        if (!empty($filters['role_type']) && $shouldInclude) {
+            $hasRole = false;
+            foreach ($departments as $dept) {
+                if ($dept['role'] == $filters['role_type']) {
+                    $hasRole = true;
+                    break;
+                }
+            }
+            if (!$hasRole) $shouldInclude = false;
+        }
+
+        // Progress status filter
+        if (!empty($filters['progress_status']) && $shouldInclude) {
+            if ($item['progress_status'] !== $filters['progress_status']) {
+                $shouldInclude = false;
+            }
+        }
+
+        // เพิ่มเข้าผลลัพธ์ถ้าผ่านการกรอง
+        if ($shouldInclude) {
+            $processedResults[] = $item;
+        }
+    }
+
+    // Apply permission-based filtering
+    $permissions = getStrategicViewPermissions();
+    if (!$permissions['can_view_draft_reports']) {
+        $processedResults = array_filter($processedResults, function($item) {
+            return $item['progress_status'] !== 'draft';
+        });
+    }
+
+    return array_values($processedResults);
+}
+
+/**
+ * ดึงข้อมูลหน่วยงานที่เกี่ยวข้องกับ Key Result
+ */
+private function getKeyResultDepartments($keyResultId)
+{
+    $db = \Config\Database::connect();
+
+    return $db->table('key_result_departments krd')
+        ->select('
+            krd.department_id,
+            krd.role,
+            d.short_name,
+            d.name as full_name
+        ')
+        ->join('departments d', 'krd.department_id = d.id')
+        ->where('krd.key_result_id', $keyResultId)
+        ->orderBy('FIELD(krd.role, "Leader", "CoWorking")') // Leader ก่อน
+        ->orderBy('d.short_name', 'ASC')
+        ->get()
+        ->getResultArray();
+}
+
+
+
+    /**
+     * ดึงข้อมูล Progress ล่าสุดของ Key Result
+     */
+    private function getLatestProgress($keyResultId)
+    {
+        $db = \Config\Database::connect();
+
+        return $db->table('key_result_progress krp')
+            ->select('
+                krp.*,
+                rp.quarter_name,
+                rp.year,
+                u.full_name
+            ')
+            ->join('reporting_periods rp', 'krp.reporting_period_id = rp.id', 'left')
+            ->join('users u', 'krp.created_by = u.id', 'left')
+            ->where('krp.key_result_id', $keyResultId)
+            ->orderBy('krp.version', 'DESC')
+            ->orderBy('krp.created_date', 'DESC')
+            ->limit(1)
+            ->get()
+            ->getRowArray();
+    }
+
+    /**
+     * นับจำนวน entries ที่ published
+     */
+    private function getPublishedEntriesCount($keyResultId)
+    {
+        $db = \Config\Database::connect();
+
+        return $db->table('key_result_entries')
+            ->where('key_result_id', $keyResultId)
+            ->where('entry_status', 'published')
+            ->countAllResults();
+    }
+
+    /**
+     * สร้าง Summary Statistics สำหรับ Strategic Dashboard
+     */
+    private function generateStrategicStats($keyresults, $filters)
+    {
+        $stats = [
+            'total_key_results' => count($keyresults),
+            'by_objective_group' => [],
+            'by_department' => [],
+            'by_status' => [
+                'no_report' => 0,
+                'draft' => 0,
+                'submitted' => 0,
+                'approved' => 0,
+                'rejected' => 0
+            ],
+            'by_role' => [
+                'Leader' => 0,
+                'CoWorking' => 0
+            ],
+            'progress_summary' => [
+                'avg_progress' => 0,
+                'on_track' => 0,    // >= 75%
+                'at_risk' => 0,     // 50-74%
+                'behind' => 0,      // < 50%
+                'total_with_progress' => 0
+            ],
+            'reporting_activity' => [
+                'last_7_days' => 0,
+                'last_30_days' => 0,
+                'overdue_reports' => 0
+            ]
+        ];
+
+        $totalProgress = 0;
+        $progressCount = 0;
+
+        foreach ($keyresults as $item) {
+            // Count by Objective Group
+            $groupName = $item['og_name'];
+            if (!isset($stats['by_objective_group'][$groupName])) {
+                $stats['by_objective_group'][$groupName] = 0;
+            }
+            $stats['by_objective_group'][$groupName]++;
+
+            // Count by Department
+            if (!empty($item['departments'])) {
+                foreach ($item['departments'] as $dept) {
+                    $deptName = $dept['short_name'];
+                    if (!isset($stats['by_department'][$deptName])) {
+                        $stats['by_department'][$deptName] = 0;
+                    }
+                    $stats['by_department'][$deptName]++;
+                }
+            }
+
+            // Count by Status
+            $status = $item['progress_status'];
+            if (isset($stats['by_status'][$status])) {
+                $stats['by_status'][$status]++;
+            }
+
+            // Count by Role
+            $role = $item['key_result_dep_role'];
+            if (isset($stats['by_role'][$role])) {
+                $stats['by_role'][$role]++;
+            }
+
+            // Progress Summary
+            if ($item['progress_percentage'] !== null) {
+                $progressCount++;
+                $totalProgress += $item['progress_percentage'];
+                $stats['progress_summary']['total_with_progress']++;
+
+                $percentage = $item['progress_percentage'];
+                if ($percentage >= 75) {
+                    $stats['progress_summary']['on_track']++;
+                } elseif ($percentage >= 50) {
+                    $stats['progress_summary']['at_risk']++;
+                } else {
+                    $stats['progress_summary']['behind']++;
+                }
+            }
+
+            // Reporting Activity
+            if ($item['progress_updated_date']) {
+                $daysSince = $this->calculateDaysSince($item['progress_updated_date']);
+                if ($daysSince <= 7) {
+                    $stats['reporting_activity']['last_7_days']++;
+                }
+                if ($daysSince <= 30) {
+                    $stats['reporting_activity']['last_30_days']++;
+                }
+            }
+        }
+
+        // คำนวณ Average Progress
+        $stats['progress_summary']['avg_progress'] = $progressCount > 0 ? round($totalProgress / $progressCount, 1) : 0;
+
+        return $stats;
+    }
+
+    /**
+     * ดึงข้อมูลสำหรับ Filter Options
+     */
+    private function getFilterOptions()
+    {
+        $db = \Config\Database::connect();
+
+        return [
+            'objective_groups' => $db->table('objective_groups')
+                ->select('id, name')
+                ->orderBy('id')
+                ->get()
+                ->getResultArray(),
+
+            'departments' => $db->table('departments')
+                ->select('id, short_name, name')
+                ->orderBy('short_name')
+                ->get()
+                ->getResultArray(),
+
+            'reporting_periods' => $db->table('reporting_periods')
+                ->select('id, quarter_name, year, CONCAT(quarter_name, " ", year) as display_name')
+                ->where('is_active', 1)
+                ->orderBy('year', 'DESC')
+                ->orderBy('quarter', 'DESC')
+                ->get()
+                ->getResultArray(),
+
+            'years' => ['2568', '2567', '2566'],
+
+            'status_options' => [
+                'no_report' => 'ยังไม่มีรายงาน',
+                'draft' => 'ฉบับร่าง',
+                'submitted' => 'รออนุมัติ',
+                'approved' => 'อนุมัติแล้ว',
+                'rejected' => 'ปฏิเสธ'
+            ],
+
+            'role_options' => [
+                'Leader' => 'Leader',
+                'CoWorking' => 'CoWorking'
+            ]
+        ];
+    }
+
+    /**
+     * คำนวณจำนวนวันที่ผ่านมา
+     */
+    private function calculateDaysSince($date)
+    {
+        $then = new \DateTime($date);
+        $now = new \DateTime();
+        return $now->diff($then)->days;
+    }
+
+    /**
+     * API: ส่งออกข้อมูลเป็น Excel/PDF
+     */
+    public function export()
+    {
+        if (!getStrategicViewPermissions()['can_export_data']) {
+            return $this->response->setStatusCode(403)
+                ->setJSON(['error' => 'คุณไม่มีสิทธิ์ในการส่งออกข้อมูล']);
+        }
+
+        $format = $this->request->getGet('format') ?? 'excel';
+        $filters = [
+            'year' => $this->request->getGet('year') ?? '2568',
+            'objective_group_id' => $this->request->getGet('group') ?? null,
+            'department_id' => $this->request->getGet('dept') ?? null,
+            'progress_status' => $this->request->getGet('status') ?? null
+        ];
+
+        $keyresults = $this->getStrategicKeyResults($filters);
+
+        // สร้างไฟล์สำหรับดาวน์โหลด
+        $filename = 'strategic_overview_' . date('Y-m-d_His') . '.' . ($format === 'pdf' ? 'pdf' : 'xlsx');
+
+        // TODO: Implement actual export logic
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'กำลังเตรียมไฟล์สำหรับดาวน์โหลด...',
+            'filename' => $filename
+        ]);
+    }
+
+    /**
+     * API: ดึงข้อมูลสำหรับ AJAX refresh
+     */
+    public function api()
+    {
+        $action = $this->request->getGet('action');
+
+        switch ($action) {
+            case 'refresh_stats':
+                return $this->apiRefreshStats();
+            case 'get_department_details':
+                return $this->apiGetDepartmentDetails();
+            default:
+                return $this->response->setStatusCode(400)
+                    ->setJSON(['error' => 'Invalid action']);
+        }
+    }
+
+    private function apiRefreshStats()
+    {
+        $filters = [
+            'year' => $this->request->getGet('year') ?? '2568',
+            'objective_group_id' => $this->request->getGet('group') ?? null,
+            'department_id' => $this->request->getGet('dept') ?? null,
+            'progress_status' => $this->request->getGet('status') ?? null
+        ];
+
+        $keyresults = $this->getStrategicKeyResults($filters);
+        $stats = $this->generateStrategicStats($keyresults, $filters);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'stats' => $stats,
+            'total_results' => count($keyresults)
+        ]);
+    }
+
+    private function apiGetDepartmentDetails()
+    {
+        $departmentId = $this->request->getGet('department_id');
+
+        if (!$departmentId) {
+            return $this->response->setStatusCode(400)
+                ->setJSON(['error' => 'Department ID required']);
+        }
+
+        $filters = ['department_id' => $departmentId, 'year' => '2568'];
+        $keyresults = $this->getStrategicKeyResults($filters);
+        $stats = $this->generateStrategicStats($keyresults, $filters);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'department_stats' => $stats,
+            'key_results' => array_slice($keyresults, 0, 10) // จำกัดแค่ 10 รายการ
+        ]);
+    }
+}

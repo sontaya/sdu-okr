@@ -80,7 +80,7 @@ class TemplateController extends BaseController
         $detailedMenuMapping = [
             'App\Controllers\DashboardController::index' => 'dashboard-executive',
             'App\Controllers\DashboardController::executive' => 'dashboard-executive',
-            'App\Controllers\DashboardController::department' => 'dashboard-department',
+            'App\Controllers\DashboardController::department' => 'dashboard-department', // <-- เพิ่มบรรทัดนี้
             'App\Controllers\DashboardController::progress' => 'dashboard-progress',
             'App\Controllers\KeyresultController::list' => 'keyresult-list',
             'App\Controllers\KeyresultController::view' => 'keyresult-list',
@@ -89,6 +89,9 @@ class TemplateController extends BaseController
             'App\Controllers\ProgressController::list' => 'progress-list',
             'App\Controllers\MainController::index' => 'dashboard-executive',
             'App\Controllers\MainController::dashboard' => 'dashboard-executive',
+            'App\Controllers\StrategicController::index' => 'strategic-overview',
+            'App\Controllers\StrategicController::overview' => 'strategic-overview',
+            'App\Controllers\AdminController::managePermissions' => 'admin-permissions',
         ];
 
         if (isset($detailedMenuMapping[$currentRoute])) {

@@ -1,0 +1,10 @@
+/* Strategic Dashboard Styles */
+/* .goal-badge {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+} */
+
+/* Department Badge Colors */
+.badge-outline-primary { border: 1px solid #1565c0; color: #1565c0; background: transparent; }
+.badge-outline-success { border: 1px solid #2e7d32; color: #2e7d32; background: transparent; }

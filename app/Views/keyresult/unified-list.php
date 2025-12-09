@@ -190,10 +190,17 @@
                                     Obj:<?= esc($item['objective_name']) ?>
                                 </div>
 
+                                <!-- Key Results -->
+                                <div class="mb-1">
+                                    <span class="text-gray-600 fs-7 fw-semibold">
+                                        KR: <?= esc($item['key_result_template_name']) ?>
+                                    </span>
+                                </div>
+
                                 <!-- Title -->
                                 <div class="mb-1">
                                     <a href="<?= base_url('keyresult/view/' . $item['key_result_id']) ?>" class="text-gray-600 text-hover-goal-<?= $og_id ?> fs-7 fw-semibold">
-                                    KR: <?= esc($item['key_result_name']) ?>
+                                        KR<?= esc($item['key_result_year']) ?>: <?= esc($item['key_result_name']) ?>
                                     </a>
                                 </div>
 

@@ -1,5 +1,3 @@
-จากระบบ SDU-OKR ที่มีอยู่และความต้องการของสำนักบริหารกลยุทธ์ ผมเห็นว่าต้องการสิทธิ์แบบ "Strategic Overview" ที่แตกต่างจากระบบปัจจุบัน ให้ผมแนะนำการออกแบบดังนี้:
-
 ## 🎯 **แนวทางการออกแบบสิทธิ์ Strategic Office**
 
 ### **1. สร้าง Role ใหม่: "Strategic Viewer"**
@@ -73,3 +71,220 @@
 - Responsive charts และ interactive elements
 
 คุณคิดว่าแนวทางนี้ตรงกับความต้องการของสำนักบริหารกลยุทธ์หรือไม่? มีจุดไหนที่ต้องการปรับแต่งเพิ่มเติมไหมครับ?
+
+### หน้าจอ Strategic Overview สำหรับสำนักบริหารกลยุทธ์ที่สามารถ:
+- ดูข้าม Department - เห็นข้อมูลจากทุกหน่วยงาน
+- Filter ที่หลากหลาย - กรองตาม Objective Group, Department, สถานะ, ฯลฯ
+- UI คล้าย My Key Results - ใช้ layout เดียวกันเพื่อความคุ้นเคย
+
+
+# 🎯 Strategic Dashboard Installation Guide
+
+## Overview
+ระบบ Strategic Overview สำหรับสำนักบริหารกลยุทธ์ที่ให้สิทธิ์ดูข้อมูล Key Results ข้าม Department พร้อม Filter และ Analytics ที่ครอบคลุม
+
+---
+
+## 📋 Installation Steps
+
+### 1. **Database Updates**
+```sql
+-- Execute SQL commands from database_update.sql
+-- เพิ่ม StrategicViewer role และ indexes สำหรับ performance
+```
+
+### 2. **Permission Helper Extension**
+เพิ่มฟังก์ชันใน `app/Helpers/permission_helper.php`:
+```php
+// Add functions: isStrategicViewer(), canViewStrategicDashboard(), getStrategicViewPermissions()
+```
+
+### 3. **Controller**
+สร้างไฟล์ใหม่: `app/Controllers/StrategicController.php`
+
+### 4. **View Template**
+สร้างไฟล์ใหม่: `app/Views/strategic/overview.php`
+
+### 5. **Routes**
+เพิ่มใน `app/Config/Routes.php`:
+```php
+$routes->group('strategic', function($routes) {
+    $routes->get('/', 'StrategicController::index');
+    $routes->get('overview', 'StrategicController::overview');
+    $routes->get('api', 'StrategicController::api');
+    $routes->get('export', 'StrategicController::export');
+});
+```
+
+### 6. **Menu Integration**
+เพิ่มใน `app/Views/template/sidebar_menu.php` (หลัง KeyResults menu)
+
+### 7. **JavaScript**
+สร้างไฟล์ใหม่: `public/assets/js/strategic/overview.js`
+
+### 8. **CSS (Optional)**
+สร้างไฟล์ใหม่: `public/assets/css/strategic-dashboard.css`:
+```css
+/* Strategic Dashboard Styles */
+.goal-badge {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.goal-badge-1 { background-color: #e8f5e8; color: #2e7d32; }
+.goal-badge-2 { background-color: #e3f2fd; color: #1565c0; }
+.goal-badge-3 { background-color: #fff3e0; color: #ef6c00; }
+.goal-badge-4 { background-color: #fce4ec; color: #c2185b; }
+.goal-badge-5 { background-color: #f3e5f5; color: #7b1fa2; }
+
+.obj-color-1 { color: #2e7d32; }
+.obj-color-2 { color: #1565c0; }
+.obj-color-3 { color: #ef6c00; }
+.obj-color-4 { color: #c2185b; }
+.obj-color-5 { color: #7b1fa2; }
+```
+
+### 9. **TemplateController Update**
+เพิ่มใน `setAutoActiveMenu()`:
+```php
+'App\Controllers\StrategicController::index' => 'strategic-overview',
+'App\Controllers\StrategicController::overview' => 'strategic-overview',
+```
+
+---
+
+## 🔑 Grant Strategic Viewer Permissions
+
+### Via Database (Quick)
+```sql
+-- สำหรับสำนักบริหารกลยุทธ์ (department_id = 22)
+INSERT INTO department_user_roles
+(user_id, department_id, role_type, created_by)
+VALUES
+(1, 22, 'StrategicViewer', 1);
+```
+
+### Via Admin Interface
+1. เข้า `Admin → Manage Permissions`
+2. เลือกผู้ใช้ที่ต้องการ
+3. เพิ่มสิทธิ์ `StrategicViewer` ให้กับสำนักบริหารกลยุทธ์
+
+---
+
+## 📊 Features Overview
+
+### **Strategic Overview Dashboard**
+- **URL**: `/strategic/overview`
+- **Permissions**: StrategicViewer หรือ Admin เท่านั้น
+
+### **Key Features**
+
+#### 1. **Enhanced Summary Cards**
+- Total Key Results ทั่วมหาวิทยาลัย
+- Average Progress ทั้งหมด
+- On Track vs At Risk vs Behind
+- Recent Reporting Activity
+
+#### 2. **Advanced Filtering**
+- **ปีงบประมาณ**: เลือกปี (2568, 2567, 2566)
+- **Strategic Goals**: กรองตาม Objective Groups
+- **หน่วยงาน**: เลือกหน่วยงานเฉพาะ
+- **สถานะรายงาน**: ยังไม่รายงาน, ฉบับร่าง, รออนุมัติ, อนุมัติแล้ว, ปฏิเสธ
+- **บทบาท**: Leader หรือ CoWorking
+- **ค้นหา**: ค้นหาตามคำสำคัญ
+
+#### 3. **Strategic Analytics**
+- **By Strategic Goals**: แสดงการกระจายตาม 5 กลุ่มหลัก
+- **By Status**: สถิติตามสถานะรายงาน
+- **Performance Metrics**: On Track, At Risk, Behind
+
+#### 4. **Cross-Department View**
+- ดูข้อมูลจากทุกหน่วยงาน (ไม่จำกัดแค่หน่วยงานตัวเอง)
+- รายละเอียดหน่วยงานผู้รับผิดชอบแต่ละ Key Result
+- บทบาท Leader vs CoWorking
+
+#### 5. **Interactive Table**
+- DataTable พร้อม Search, Sort, Pagination
+- View Mode: Table และ Cards
+- Export to Excel (สำหรับผู้มีสิทธิ์)
+- Real-time data refresh
+
+#### 6. **Permission-Based Access**
+- **Strategic Viewer**: ดูได้เฉพาะรายงานที่ Approved
+- **Admin**: ดูได้ทุกสถานะ รวมถึง Draft
+
+---
+
+## 🔍 Usage Examples
+
+### **Use Case 1: Strategic Planning Review**
+1. เข้า Strategic Overview
+2. เลือกปีงบประมาณ 2568
+3. ดู Summary Cards เพื่อประเมินความคืบหน้าโดยรวม
+4. กรองตาม Strategic Goals เพื่อดูผลงานแต่ละกลุ่ม
+
+### **Use Case 2: Department Performance Analysis**
+1. กรองตามหน่วยงานเฉพาะ
+2. ดูสถานะรายงานและความคืบหน้า
+3. เปรียบเทียบ Leader vs CoWorking roles
+4. Export รายงานสำหรับการประชุม
+
+### **Use Case 3: Risk Management**
+1. กรองตาม "At Risk" หรือ "Behind"
+2. ดูรายการ Key Results ที่ต้องติดตาม
+3. ตรวจสอบ Days Since Update
+4. ติดต่อหน่วยงานที่เกี่ยวข้อง
+
+---
+
+## 🎨 UI Features
+
+### **Enhanced Visual Design**
+- **Goal Badges**: สีประจำกลุ่มเป้าหมาย 5 สี
+- **Progress Bars**: แสดงความคืบหน้าแบบ visual
+- **Status Badges**: แสดงสถานะด้วยสีและไอคอน
+- **Department Pills**: แสดงหน่วยงานแบบ compact
+- **Role Indicators**: แสดง Leader/CoWorking ด้วย crown/people icon
+
+### **Interactive Elements**
+- **Filter Dropdowns**: Select2 พร้อม search
+- **Real-time Search**: กรองข้อมูลทันที
+- **View Toggle**: สลับระหว่าง Table และ Cards
+- **Export Buttons**: ดาวน์โหลด Excel/PDF
+- **Refresh Button**: อัพเดทข้อมูลล่าสุด
+
+---
+
+## 🔧 Customization
+
+### **Adding New Filters**
+เพิ่มใน `getFilterOptions()` และ `getStrategicKeyResults()`
+
+### **Custom Analytics**
+ปรับแต่งใน `generateStrategicStats()`
+
+### **Export Formats**
+เพิ่ม format ใหม่ใน `export()` method
+
+---
+
+## 📈 Performance Notes
+
+- ใช้ Database View สำหรับ complex queries
+- มี Indexes สำหรับ common filtering
+- DataTable client-side processing สำหรับ responsive UI
+- Caching สำหรับ filter options
+
+---
+
+## 🚀 Ready to Use!
+
+หลังจาก install ครบ:
+
+1. Grant StrategicViewer permission ให้ผู้ใช้งาน
+2. เข้า `/strategic/overview`
+3. ใช้ Filter ตามต้องการ
+4. Export รายงานเพื่อการวิเคราะห์
+
+ระบบพร้อมใช้งานแล้ว! 🎉

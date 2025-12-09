@@ -118,11 +118,15 @@ var KTSigninGeneral = function () {
                     // Disable button to avoid multiple click
                     submitButton.disabled = true;
 
+                    axios.post(submitButton.closest('form').getAttribute('action'), new FormData(form))
+                    .then(function (response) {
+                        console.log('🔍 Server response:', response.data);
 
-                    axios.post(submitButton.closest('form').getAttribute('action'), new FormData(form)).then(function (response) {
                         if (response.data.status === 'success') {
-                            const redirectUrl = form.getAttribute('data-kt-redirect-url');
-                            location.href = redirectUrl || '/';
+                            const redirectUrl = response.data.redirect_url || form.getAttribute('data-kt-redirect-url') || '/';
+                            console.log('🎯 Final redirect URL:', redirectUrl);
+                            console.log('🚀 About to redirect...');
+                            location.href = redirectUrl;
                         } else {
                             Swal.fire({
                                 text: response.data.message || "เกิดข้อผิดพลาด",
@@ -134,16 +138,28 @@ var KTSigninGeneral = function () {
                                 }
                             });
                         }
-                    }).then(() => {
+                    })
+                    .catch(function (error) {
+                        console.error('❌ Login error:', error);
+                        Swal.fire({
+                            text: "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+                            icon: "error",
+                            buttonsStyling: false,
+                            confirmButtonText: "ตกลง",
+                            customClass: {
+                                confirmButton: "btn btn-primary"
+                            }
+                        });
+                    })
+                    .finally(function() {
                         // Hide loading indication
                         submitButton.removeAttribute('data-kt-indicator');
-
                         // Enable button
                         submitButton.disabled = false;
                     });
 
                 } else {
-                    // Show error popup. For more info check the plugin's official documentation: https://sweetalert2.github.io/
+                    // Show error popup
                     Swal.fire({
                         text: "Sorry, looks like there are some errors detected, please try again.",
                         icon: "error",

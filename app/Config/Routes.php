@@ -14,11 +14,12 @@ if (is_file(SYSTEMPATH . 'Config/Routes.php')) {
 }
 
 
-$routes->get('/', 'Home::index');
+$routes->get('/', 'AuthController::index');
 $routes->get('/demo', 'DemoController::index');
 $routes->get('login', 'AuthController::index');
 $routes->post('auth/login', 'AuthController::login');
 $routes->get('auth/logout', 'AuthController::logout');
+$routes->get('redirect-after-login', 'AuthController::redirectAfterLogin');
 
 
 // Admin Routes - เฉพาะผู้ที่มีสิทธิ์ Admin
@@ -32,10 +33,16 @@ $routes->group('admin', function($routes) {
     $routes->post('grant-role', 'AdminController::grantRole');
     $routes->post('revoke-role', 'AdminController::revokeRole');
     $routes->get('user-roles/(:num)', 'AdminController::getUserRoles/$1');
+
+    $routes->post('search-eprofile-users', 'AdminController::searchEprofileUsers');
+    $routes->post('add-user-from-eprofile', 'AdminController::addUserFromEprofile');
+
+    $routes->get('edit-user/(:num)', 'AdminController::editUser/$1');
+    $routes->post('update-user/(:num)', 'AdminController::updateUser/$1');
 });
 
 
-$routes->get('/', 'DashboardController::index');
+// $routes->get('/', 'DashboardController::index');
 $routes->get('dashboard', 'DashboardController::index');
 
 $routes->group('keyresult', function($routes) {
@@ -83,6 +90,8 @@ $routes->group('progress', function($routes) {
 
     // Comments
     $routes->post('add-comment', 'ProgressController::addComment');
+
+    $routes->get('detailed/(:num)', 'ProgressController::detailedReport/$1');
 });
 
 
@@ -116,3 +125,16 @@ $routes->group('dashboard', function ($routes) {
 });
 
 
+// Strategic Dashboard Routes - เฉพาะผู้ที่มีสิทธิ์ Strategic Viewer หรือ Admin
+$routes->group('strategic', function($routes) {
+    $routes->get('/', 'StrategicController::index');
+    $routes->get('overview', 'StrategicController::overview');
+
+    // API endpoints สำหรับ Strategic Dashboard
+    $routes->get('api', 'StrategicController::api');
+    $routes->get('api/stats', 'StrategicController::api');
+    $routes->get('api/department/(:num)', 'StrategicController::api');
+
+    // Export functionality
+    $routes->get('export', 'StrategicController::export');
+});
