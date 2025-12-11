@@ -281,6 +281,17 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
                             </a>
                         </div>
                         <!--end:Menu item Permissions-->
+
+                        <!--begin:Menu item Key Result Master-->
+                        <div class="menu-item">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'admin-keyresult') ? 'active' : '' ?>" href="<?= base_url('admin/keyresult') ?>">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Manage Key Results</span>
+                            </a>
+                        </div>
+                        <!--end:Menu item Key Result Master-->
                     </div>
                     <!--end:Menu sub-->
                 </div>

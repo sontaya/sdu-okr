@@ -29,6 +29,16 @@ $routes->group('admin', function($routes) {
     $routes->get('manage-permissions', 'AdminController::managePermissions');
     $routes->get('system-stats', 'AdminController::systemStats');
 
+    // Key Result Master Data
+    $routes->group('keyresult', ['namespace' => 'App\Controllers\Admin'], function($routes) {
+        $routes->get('/', 'KeyResultMasterController::index');
+        $routes->get('form', 'KeyResultMasterController::form');
+        $routes->get('form/(:num)', 'KeyResultMasterController::form/$1');
+        $routes->post('save', 'KeyResultMasterController::save');
+        $routes->post('get-related-data', 'KeyResultMasterController::getRelatedData');
+        $routes->delete('delete/(:num)', 'KeyResultMasterController::delete/$1');
+    });
+
     // API endpoints
     $routes->post('grant-role', 'AdminController::grantRole');
     $routes->post('revoke-role', 'AdminController::revokeRole');

@@ -3,25 +3,95 @@
    =============================================== */
 
 /* Goal Badge Colors (Original) */
-.goal-badge-1 { background-color: #F4B400 !important; color: white !important; }  /* Student Alumni - เหลือง */
-.goal-badge-2 { background-color: #2196F3 !important; color: white !important; }  /* Academic Excellence - น้ำเงิน */
-.goal-badge-3 { background-color: #D32F2F !important; color: white !important; }  /* Research Innovation - แดง */
-.goal-badge-4 { background-color: #388E3C !important; color: white !important; }  /* Community Engagement - เขียว */
-.goal-badge-5 { background-color: #7B1FA2 !important; color: white !important; }  /* Next Learning Ecosystem - ม่วง */
+.goal-badge-1 {
+    background-color: #F4B400 !important;
+    color: white !important;
+}
+
+/* Student Alumni - เหลือง */
+.goal-badge-2 {
+    background-color: #2196F3 !important;
+    color: white !important;
+}
+
+/* Academic Excellence - น้ำเงิน */
+.goal-badge-3 {
+    background-color: #D32F2F !important;
+    color: white !important;
+}
+
+/* Research Innovation - แดง */
+.goal-badge-4 {
+    background-color: #388E3C !important;
+    color: white !important;
+}
+
+/* Community Engagement - เขียว */
+.goal-badge-5 {
+    background-color: #7B1FA2 !important;
+    color: white !important;
+}
+
+/* Next Learning Ecosystem - ม่วง */
 
 /* Goal Light Colors (สำหรับ Objective Text และ Background) */
-.goal-light-1 { color: #E65100 !important; background-color: #FFF8E1 !important; }  /* เหลืองอ่อน */
-.goal-light-2 { color: #1565C0 !important; background-color: #E3F2FD !important; }  /* น้ำเงินอ่อน */
-.goal-light-3 { color: #C62828 !important; background-color: #FFEBEE !important; }  /* แดงอ่อน */
-.goal-light-4 { color: #2E7D32 !important; background-color: #E8F5E8 !important; }  /* เขียวอ่อน */
-.goal-light-5 { color: #6A1B9A !important; background-color: #F3E5F5 !important; }  /* ม่วงอ่อน */
+.goal-light-1 {
+    color: #E65100 !important;
+    background-color: #FFF8E1 !important;
+}
+
+/* เหลืองอ่อน */
+.goal-light-2 {
+    color: #1565C0 !important;
+    background-color: #E3F2FD !important;
+}
+
+/* น้ำเงินอ่อน */
+.goal-light-3 {
+    color: #C62828 !important;
+    background-color: #FFEBEE !important;
+}
+
+/* แดงอ่อน */
+.goal-light-4 {
+    color: #2E7D32 !important;
+    background-color: #E8F5E8 !important;
+}
+
+/* เขียวอ่อน */
+.goal-light-5 {
+    color: #6A1B9A !important;
+    background-color: #F3E5F5 !important;
+}
+
+/* ม่วงอ่อน */
 
 /* Objective Text Colors (เฉพาะสี ไม่มี background) */
-.obj-color-1 { color: #E65100 !important; }  /* เหลืองเข้ม */
-.obj-color-2 { color: #1565C0 !important; }  /* น้ำเงินเข้ม */
-.obj-color-3 { color: #C62828 !important; }  /* แดงเข้ม */
-.obj-color-4 { color: #2E7D32 !important; }  /* เขียวเข้ม */
-.obj-color-5 { color: #6A1B9A !important; }  /* ม่วงเข้ม */
+.obj-color-1 {
+    color: #E65100 !important;
+}
+
+/* เหลืองเข้ม */
+.obj-color-2 {
+    color: #1565C0 !important;
+}
+
+/* น้ำเงินเข้ม */
+.obj-color-3 {
+    color: #C62828 !important;
+}
+
+/* แดงเข้ม */
+.obj-color-4 {
+    color: #2E7D32 !important;
+}
+
+/* เขียวเข้ม */
+.obj-color-5 {
+    color: #6A1B9A !important;
+}
+
+/* ม่วงเข้ม */
 
 /* KR Title Colors (อ่อนกว่า Objective) */
 /*
@@ -40,8 +110,34 @@
 }
 
 /* Goal Hover Colors (สำหรับ Links) */
-.text-hover-goal-1:hover { color: #F4B400 !important; }  /* Student Alumni - เหลือง */
-.text-hover-goal-2:hover { color: #2196F3 !important; }  /* Academic Excellence - น้ำเงิน */
-.text-hover-goal-3:hover { color: #D32F2F !important; }  /* Research Innovation - แดง */
-.text-hover-goal-4:hover { color: #388E3C !important; }  /* Community Engagement - เขียว */
-.text-hover-goal-5:hover { color: #7B1FA2 !important; }  /* Next Learning Ecosystem - ม่วง */
+.text-hover-goal-1:hover {
+    color: #F4B400 !important;
+}
+
+/* Student Alumni - เหลือง */
+.text-hover-goal-2:hover {
+    color: #2196F3 !important;
+}
+
+/* Academic Excellence - น้ำเงิน */
+.text-hover-goal-3:hover {
+    color: #D32F2F !important;
+}
+
+/* Research Innovation - แดง */
+.text-hover-goal-4:hover {
+    color: #388E3C !important;
+}
+
+/* Community Engagement - เขียว */
+.text-hover-goal-5:hover {
+    color: #7B1FA2 !important;
+}
+
+/* Next Learning Ecosystem - ม่วง */
+
+/* Custom Badge Styles */
+.badge-light-gray {
+    color: #4B5675;
+    background-color: #F1F1F2;
+}
