@@ -18,30 +18,61 @@ var KTProgressForm = function () {
 
     // Init form inputs
     var initForm = function () {
-        // Progress value input change handler
-        const progressValueInput = document.getElementById('progress_value_input');
-        const progressPercentageDisplay = document.getElementById('progress_percentage_display');
+        // Progress Percentage Slider & Input Handler
+        const percentageSlider = document.getElementById('progress_percentage_slider');
+        const percentageInput = document.getElementById('progress_percentage_input');
+        const rawValueDisplay = document.getElementById('calculated_raw_value');
 
-        if (progressValueInput && progressPercentageDisplay) {
-            progressValueInput.addEventListener('input', function() {
-                const currentValue = parseFloat(this.value) || 0;
-                const percentage = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
-                progressPercentageDisplay.textContent = `(${percentage.toFixed(1)}%)`;
+        if (percentageSlider && percentageInput) {
+            const updateCalculation = function () {
+                const percentage = parseFloat(percentageInput.value) || 0;
+                // targetValue comes from global variable defined in View
+                const rawValue = targetValue > 0 ? (percentage * targetValue) / 100 : 0;
 
-                // Update color based on percentage
-                if (percentage >= 100) {
-                    progressPercentageDisplay.className = 'fw-bold text-success ms-3';
-                } else if (percentage >= 75) {
-                    progressPercentageDisplay.className = 'fw-bold text-info ms-3';
-                } else if (percentage >= 50) {
-                    progressPercentageDisplay.className = 'fw-bold text-warning ms-3';
+                if (rawValueDisplay) {
+                    // Format number with commas if needed, here just 2 decimals
+                    rawValueDisplay.textContent = rawValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+            };
+
+            const syncInputs = function (source) {
+                let value = parseFloat(source.value);
+
+                if (isNaN(value)) value = 0;
+                if (value < 0) value = 0;
+                if (value > 100) value = 100;
+
+                if (source === percentageSlider) {
+                    percentageInput.value = value;
                 } else {
-                    progressPercentageDisplay.className = 'fw-bold text-danger ms-3';
+                    percentageSlider.value = value;
+                }
+                updateCalculation();
+            };
+
+            percentageSlider.addEventListener('input', function () {
+                syncInputs(this);
+            });
+
+            percentageInput.addEventListener('input', function () {
+                // Don't auto-correct while typing, maybe on blur or change?
+                // For input range sync, input event is fine but we should be careful about typing decimals.
+                // If user types "5", slider moves to 5. "50" -> 50.
+                // Let's just update slider and calculation, force valid range only on change/blur to allow typing.
+
+                let val = parseFloat(this.value);
+                if (!isNaN(val)) {
+                    percentageSlider.value = val;
+                    updateCalculation();
                 }
             });
 
-            // Trigger calculation on page load
-            progressValueInput.dispatchEvent(new Event('input'));
+            percentageInput.addEventListener('change', function () {
+                syncInputs(this);
+            });
+
+            // Init
+            updateCalculation();
         }
 
         // Status indicator
@@ -49,11 +80,11 @@ var KTProgressForm = function () {
         const statusIndicator = document.getElementById('progress_status_indicator');
 
         if (statusSelect && statusIndicator) {
-            const updateStatusIndicator = function() {
+            const updateStatusIndicator = function () {
                 const status = statusSelect.value;
                 statusIndicator.className = 'rounded-circle w-15px h-15px';
 
-                switch(status) {
+                switch (status) {
                     case 'draft':
                         statusIndicator.classList.add('bg-warning');
                         break;
@@ -76,54 +107,54 @@ var KTProgressForm = function () {
         }
 
         if (challengesQuill) {
-            challengesQuill.on('text-change', function() {
+            challengesQuill.on('text-change', function () {
                 document.querySelector('#challenges').value = challengesQuill.root.innerHTML;
             });
         }
 
         if (solutionsQuill) {
-            solutionsQuill.on('text-change', function() {
+            solutionsQuill.on('text-change', function () {
                 document.querySelector('#solutions').value = solutionsQuill.root.innerHTML;
             });
         }
 
         if (nextActionsQuill) {
-            nextActionsQuill.on('text-change', function() {
+            nextActionsQuill.on('text-change', function () {
                 document.querySelector('#next_actions').value = nextActionsQuill.root.innerHTML;
             });
         }
 
         // ✅ Force setup event listeners สำหรับทุก mode
-        setTimeout(function() {
+        setTimeout(function () {
             setupQuillEventListeners();
         }, 500);
 
     };
 
-    var setupQuillEventListeners = function() {
+    var setupQuillEventListeners = function () {
         if (progressDescriptionQuill) {
-            progressDescriptionQuill.on('text-change', function() {
+            progressDescriptionQuill.on('text-change', function () {
                 document.querySelector('#progress_description').value = progressDescriptionQuill.root.innerHTML;
                 console.log('Progress desc auto-synced:', progressDescriptionQuill.root.innerHTML.length, 'chars');
             });
         }
 
         if (challengesQuill) {
-            challengesQuill.on('text-change', function() {
+            challengesQuill.on('text-change', function () {
                 document.querySelector('#challenges').value = challengesQuill.root.innerHTML;
                 console.log('Challenges auto-synced:', challengesQuill.root.innerHTML.length, 'chars');
             });
         }
 
         if (solutionsQuill) {
-            solutionsQuill.on('text-change', function() {
+            solutionsQuill.on('text-change', function () {
                 document.querySelector('#solutions').value = solutionsQuill.root.innerHTML;
                 console.log('Solutions auto-synced:', solutionsQuill.root.innerHTML.length, 'chars');
             });
         }
 
         if (nextActionsQuill) {
-            nextActionsQuill.on('text-change', function() {
+            nextActionsQuill.on('text-change', function () {
                 document.querySelector('#next_actions').value = nextActionsQuill.root.innerHTML;
                 console.log('Next actions auto-synced:', nextActionsQuill.root.innerHTML.length, 'chars');
             });
@@ -141,7 +172,7 @@ var KTProgressForm = function () {
                     toolbar: [
                         [{ 'header': [1, 2, 3, false] }],
                         ['bold', 'italic', 'underline'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         ['link'],
                         ['clean']
                     ]
@@ -165,7 +196,7 @@ var KTProgressForm = function () {
                     toolbar: [
                         [{ 'header': [1, 2, 3, false] }],
                         ['bold', 'italic', 'underline'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         ['clean']
                     ]
                 },
@@ -187,7 +218,7 @@ var KTProgressForm = function () {
                     toolbar: [
                         [{ 'header': [1, 2, 3, false] }],
                         ['bold', 'italic', 'underline'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         ['clean']
                     ]
                 },
@@ -212,7 +243,7 @@ var KTProgressForm = function () {
                     toolbar: [
                         [{ 'header': [1, 2, 3, false] }],
                         ['bold', 'italic', 'underline'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         ['clean']
                     ]
                 },
@@ -239,28 +270,28 @@ var KTProgressForm = function () {
         if (!availableEntries || !selectedEntries) return;
 
         // ปุ่มเพิ่มรายการที่เลือก
-        document.getElementById('btn_add_entries').addEventListener('click', function() {
+        document.getElementById('btn_add_entries').addEventListener('click', function () {
             moveSelectedOptions(availableEntries, selectedEntries);
         });
 
         // ปุ่มเพิ่มทั้งหมด
-        document.getElementById('btn_add_all_entries').addEventListener('click', function() {
+        document.getElementById('btn_add_all_entries').addEventListener('click', function () {
             moveAllOptions(availableEntries, selectedEntries);
         });
 
         // ปุ่มลบรายการที่เลือก
-        document.getElementById('btn_remove_entries').addEventListener('click', function() {
+        document.getElementById('btn_remove_entries').addEventListener('click', function () {
             moveSelectedOptions(selectedEntries, availableEntries);
         });
 
         // ปุ่มลบทั้งหมด
-        document.getElementById('btn_remove_all_entries').addEventListener('click', function() {
+        document.getElementById('btn_remove_all_entries').addEventListener('click', function () {
             moveAllOptions(selectedEntries, availableEntries);
         });
 
         // แสดงรายละเอียดเมื่อคลิกรายการ
         function showEntryDetails(selectElement) {
-            selectElement.addEventListener('click', function(e) {
+            selectElement.addEventListener('click', function (e) {
                 const selectedOption = e.target.options[e.target.selectedIndex];
                 if (selectedOption) {
                     entryTitle.textContent = selectedOption.textContent;
@@ -275,7 +306,7 @@ var KTProgressForm = function () {
         showEntryDetails(selectedEntries);
 
         // ซ่อนรายละเอียดเมื่อคลิกที่อื่น
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (!e.target.closest('#available_entries') && !e.target.closest('#selected_entries')) {
                 entryDetails.style.display = 'none';
             }
@@ -284,7 +315,7 @@ var KTProgressForm = function () {
         // ฟังก์ชันย้ายรายการที่เลือก
         function moveSelectedOptions(fromSelect, toSelect) {
             const selectedOptions = Array.from(fromSelect.selectedOptions);
-            selectedOptions.forEach(function(option) {
+            selectedOptions.forEach(function (option) {
                 toSelect.appendChild(option);
             });
             sortSelectOptions(toSelect);
@@ -293,7 +324,7 @@ var KTProgressForm = function () {
         // ฟังก์ชันย้ายทั้งหมด
         function moveAllOptions(fromSelect, toSelect) {
             const allOptions = Array.from(fromSelect.options);
-            allOptions.forEach(function(option) {
+            allOptions.forEach(function (option) {
                 toSelect.appendChild(option);
             });
             sortSelectOptions(toSelect);
@@ -302,10 +333,10 @@ var KTProgressForm = function () {
         // ฟังก์ชันเรียงลำดับ options
         function sortSelectOptions(selectElement) {
             const options = Array.from(selectElement.options);
-            options.sort(function(a, b) {
+            options.sort(function (a, b) {
                 return a.text.localeCompare(b.text);
             });
-            options.forEach(function(option) {
+            options.forEach(function (option) {
                 selectElement.appendChild(option);
             });
         }
@@ -318,13 +349,15 @@ var KTProgressForm = function () {
             form,
             {
                 fields: {
-                    'progress_value': {
+                    'progress_percentage': {
                         validators: {
                             notEmpty: {
-                                message: 'กรุณาระบุค่าความคืบหน้า'
+                                message: 'กรุณาระบุค่าเปอร์เซ็นต์ความคืบหน้า'
                             },
                             numeric: {
-                                message: 'กรุณาระบุตัวเลขที่ถูกต้อง'
+                                message: 'กรุณาระบุตัวเลขที่ถูกต้อง',
+                                Min: 0,
+                                Max: 100
                             }
                         }
                     },
@@ -349,7 +382,7 @@ var KTProgressForm = function () {
         );
     };
 
-    var selectAllEntriesBeforeSubmit = function() {
+    var selectAllEntriesBeforeSubmit = function () {
         // เลือกทุก option ใน selected_entries ก่อนส่งฟอร์ม
         const selectedEntries = document.getElementById('selected_entries');
         if (selectedEntries) {
@@ -371,7 +404,7 @@ var KTProgressForm = function () {
             console.log('Quill editors ready:', quillReady);
 
             // ✅ เพิ่ม delay และ force sync
-            setTimeout(function() {
+            setTimeout(function () {
                 // Sync Quill content to hidden textareas
                 syncQuillContent();
 
@@ -432,7 +465,7 @@ var KTProgressForm = function () {
                 submitProgressButton.disabled = true;
 
                 // เพิ่ม delay เช่นเดียวกัน
-                setTimeout(function() {
+                setTimeout(function () {
                     syncQuillContent();
                     selectAllEntriesBeforeSubmit();
 
@@ -447,26 +480,39 @@ var KTProgressForm = function () {
                             // ส่งข้อมูลที่จำเป็นถ้ามี
                         })
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // แสดงข้อความสำเร็จ
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // แสดงข้อความสำเร็จ
+                                Swal.fire({
+                                    text: data.message || "ส่งรายงานเพื่อขออนุมัติสำเร็จ",
+                                    icon: "success",
+                                    buttonsStyling: false,
+                                    confirmButtonText: "ตกลง",
+                                    customClass: {
+                                        confirmButton: "btn fw-bold btn-primary",
+                                    }
+                                }).then(function () {
+                                    // กลับไปหน้า view
+                                    window.location.href = `${BASE_URL}progress/view/${keyResultId}`;
+                                });
+                            } else {
+                                // แสดงข้อความผิดพลาด
+                                Swal.fire({
+                                    text: data.message || "เกิดข้อผิดพลาด",
+                                    icon: "error",
+                                    buttonsStyling: false,
+                                    confirmButtonText: "ตกลง",
+                                    customClass: {
+                                        confirmButton: "btn fw-bold btn-primary",
+                                    }
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Submit error:', error);
                             Swal.fire({
-                                text: data.message || "ส่งรายงานเพื่อขออนุมัติสำเร็จ",
-                                icon: "success",
-                                buttonsStyling: false,
-                                confirmButtonText: "ตกลง",
-                                customClass: {
-                                    confirmButton: "btn fw-bold btn-primary",
-                                }
-                            }).then(function () {
-                                // กลับไปหน้า view
-                                window.location.href = `${BASE_URL}progress/view/${keyResultId}`;
-                            });
-                        } else {
-                            // แสดงข้อความผิดพลาด
-                            Swal.fire({
-                                text: data.message || "เกิดข้อผิดพลาด",
+                                text: "เกิดข้อผิดพลาดในการส่งรายงาน",
                                 icon: "error",
                                 buttonsStyling: false,
                                 confirmButtonText: "ตกลง",
@@ -474,25 +520,12 @@ var KTProgressForm = function () {
                                     confirmButton: "btn fw-bold btn-primary",
                                 }
                             });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Submit error:', error);
-                        Swal.fire({
-                            text: "เกิดข้อผิดพลาดในการส่งรายงาน",
-                            icon: "error",
-                            buttonsStyling: false,
-                            confirmButtonText: "ตกลง",
-                            customClass: {
-                                confirmButton: "btn fw-bold btn-primary",
-                            }
+                        })
+                        .finally(function () {
+                            // ปิด loading
+                            submitProgressButton.removeAttribute('data-kt-indicator');
+                            submitProgressButton.disabled = false;
                         });
-                    })
-                    .finally(function() {
-                        // ปิด loading
-                        submitProgressButton.removeAttribute('data-kt-indicator');
-                        submitProgressButton.disabled = false;
-                    });
                 }, 200);
             });
         }
@@ -557,7 +590,7 @@ var KTProgressForm = function () {
     };
 
     // function ตรวจสอบว่า Quill editors พร้อมหรือไม่
-    var checkQuillEditorsReady = function() {
+    var checkQuillEditorsReady = function () {
         const editors = [
             progressDescriptionQuill,
             challengesQuill,
@@ -566,7 +599,7 @@ var KTProgressForm = function () {
         ];
 
         let ready = 0;
-        editors.forEach(function(editor, index) {
+        editors.forEach(function (editor, index) {
             if (editor && editor.root) {
                 ready++;
                 console.log(`Quill editor ${index} ready`);
@@ -579,10 +612,10 @@ var KTProgressForm = function () {
     };
 
     // function ตรวจสอบ content หลัง sync
-    var validateSyncedContent = function() {
+    var validateSyncedContent = function () {
         const fields = ['progress_description', 'challenges', 'solutions', 'next_actions'];
 
-        fields.forEach(function(fieldName) {
+        fields.forEach(function (fieldName) {
             const element = document.querySelector('#' + fieldName);
             const content = element ? element.value : '';
 
@@ -613,7 +646,7 @@ var KTProgressForm = function () {
             handleSubmit();
 
             // Backup form submit event listener
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', function (e) {
                 console.log('Form submitted via form event');
                 syncQuillContent();
                 selectAllEntriesBeforeSubmit();

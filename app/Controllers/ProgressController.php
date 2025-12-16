@@ -63,7 +63,15 @@ class ProgressController extends TemplateController
             // ดึงรายการข้อมูลที่เกี่ยวข้อง
             if (class_exists('\App\Models\ProgressEntryModel')) {
                 $progressEntryModel = new \App\Models\ProgressEntryModel();
+                $keyResultFileModel = new \App\Models\KeyResultFileModel(); // ✅ เรียกใช้ Model ไฟล์
+
                 $relatedEntries = $progressEntryModel->getEntriesByProgressId($progressId);
+
+                // ✅ Loop ดึงไฟล์สำหรับแต่ละ entry
+                foreach ($relatedEntries as &$entry) {
+                    $entry['files'] = $keyResultFileModel->where('entry_id', $entry['entry_id'])->findAll();
+                }
+
                 $currentProgress['entries'] = $relatedEntries;
             }
 
@@ -255,13 +263,15 @@ class ProgressController extends TemplateController
         log_message('debug', 'Progress save - Raw POST data: ' . print_r($this->request->getPost(), true));
 
 
-        // ดึงข้อมูล target_value สำหรับคำนวณเปอร์เซ็นต์
+        // ดึงข้อมูล target_value สำหรับคำนวณค่าจริง
         $keyresult = $progressModel->getKeyResultById($keyResultId);
         $targetValue = $keyresult['target_value'] ?? 0;
-        $progressValue = (float)$this->request->getPost('progress_value');
 
-        // คำนวณเปอร์เซ็นต์ความคืบหน้า
-        $progressPercentage = $targetValue > 0 ? ($progressValue / $targetValue) * 100 : 0;
+        // รับค่าเป็นเปอร์เซ็นต์
+        $progressPercentage = (float)$this->request->getPost('progress_percentage');
+
+        // คำนวณค่าจริง (progress_value) จากเปอร์เซ็นต์
+        $progressValue = $targetValue > 0 ? ($progressPercentage * $targetValue) / 100 : 0;
 
         // หาเวอร์ชันถัดไป
         $nextVersion = $progressModel->getNextVersion($keyResultId, $reportingPeriodId);
@@ -328,13 +338,15 @@ class ProgressController extends TemplateController
         log_message('debug', 'Progress UPDATE - Raw POST data: ' . print_r($this->request->getPost(), true));
 
 
-        // ดึงข้อมูล target_value สำหรับคำนวณเปอร์เซ็นต์
+        // ดึงข้อมูล target_value สำหรับคำนวณค่าจริง
         $keyresult = $progressModel->getKeyResultById($progress['key_result_id']);
         $targetValue = $keyresult['target_value'] ?? 0;
-        $progressValue = (float)$this->request->getPost('progress_value');
 
-        // คำนวณเปอร์เซ็นต์ความคืบหน้า
-        $progressPercentage = $targetValue > 0 ? ($progressValue / $targetValue) * 100 : 0;
+        // รับค่าเป็นเปอร์เซ็นต์
+        $progressPercentage = (float)$this->request->getPost('progress_percentage');
+
+        // คำนวณค่าจริง (progress_value) จากเปอร์เซ็นต์
+        $progressValue = $targetValue > 0 ? ($progressPercentage * $targetValue) / 100 : 0;
 
         // debug สำหรับ Quill content
         $progressDescription = $this->request->getPost('progress_description');

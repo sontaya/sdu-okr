@@ -274,6 +274,40 @@
                                             <?php else: ?>
                                                 <div class="text-muted fs-6 mb-3">ไม่มีรายละเอียด</div>
                                             <?php endif; ?>
+
+                                            <!-- ✅ แสดงไฟล์แนบ -->
+                                            <?php if (!empty($entry['files'])): ?>
+                                                <div class="separator mb-3"></div>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <?php foreach ($entry['files'] as $file): ?>
+                                                        <div class="d-flex align-items-center bg-light rounded p-2">
+                                                            <?php
+                                                            $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
+                                                            $iconClass = match(strtolower($extension)) {
+                                                                'pdf' => 'ki-file-pdf text-danger',
+                                                                'doc', 'docx' => 'ki-file-word text-primary',
+                                                                'xls', 'xlsx' => 'ki-file-excel text-success',
+                                                                'jpg', 'jpeg', 'png' => 'ki-picture text-warning',
+                                                                default => 'ki-file'
+                                                            };
+                                                            ?>
+                                                            <i class="ki-outline <?= $iconClass ?> fs-2 me-2"></i>
+                                                            <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                                                                <a href="<?= base_url($file['file_path']) ?>" target="_blank"
+                                                                   class="text-gray-800 text-hover-primary fs-7 fw-bold text-truncate">
+                                                                    <?= esc($file['original_name'] ?? $file['file_name']) ?>
+                                                                </a>
+                                                            </div>
+                                                            <a href="<?= base_url($file['file_path']) ?>"
+                                                               download="<?= esc($file['original_name'] ?? $file['file_name']) ?>"
+                                                               class="btn btn-sm btn-icon btn-light-primary w-25px h-25px ms-2"
+                                                               title="ดาวน์โหลด">
+                                                                <i class="ki-outline ki-arrow-down fs-4"></i>
+                                                            </a>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="card-footer pt-0">
                                             <div class="d-flex justify-content-between align-items-center">

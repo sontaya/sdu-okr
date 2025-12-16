@@ -180,41 +180,42 @@
             </div>
             <!--end::Card header-->
             <!--begin::Card body-->
+            <!--begin::Card body-->
             <div class="card-body pt-0">
-                <!--begin::ชื่อรายการ-->
-                <div class="mb-10">
-                    <label class="form-label fw-bold">ชื่อรายการข้อมูล</label>
-                    <div class="fs-4 fw-bold text-gray-800"><?= esc($entry['entry_name']) ?></div>
-                </div>
-                <!--end::ชื่อรายการ-->
 
-                <!--begin::รายละเอียด-->
-                <div class="mb-5">
-                    <label class="form-label fw-bold">รายละเอียด</label>
-                    <div class="bg-light-primary p-4 rounded border-dashed border-primary">
-                        <?php if (!empty($entry['entry_description'])): ?>
-                            <div class="text-gray-800"><?= nl2br(esc($entry['entry_description'])) ?></div>
-                        <?php else: ?>
-                            <div class="text-muted fst-italic">ไม่มีรายละเอียด</div>
-                        <?php endif; ?>
+                <div class="d-flex flex-column gap-5">
+                    <!--begin::ชื่อรายการ-->
+                    <div>
+                        <h3 class="fw-bold text-gray-900 mb-2"><?= esc($entry['entry_name']) ?></h3>
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                             <?php if (!empty($tags)): ?>
+                                <?php foreach ($tags as $tag): ?>
+                                    <span class="badge badge-light-info fs-7 fw-bold">
+                                        <i class="ki-outline ki-tag fs-6 me-1"></i>
+                                        <?= esc($tag) ?>
+                                    </span>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                </div>
-                <!--end::รายละเอียด-->
+                    <!--end::ชื่อรายการ-->
 
-                <!--begin::คำสำคัญ-->
-                <div class="mb-5">
-                    <label class="form-label fw-bold">คำสำคัญ</label>
-                    <div class="d-flex flex-wrap gap-2">
-                        <?php if (!empty($tags)): ?>
-                            <?php foreach ($tags as $tag): ?>
-                                <span class="badge badge-light-info fs-7"><?= esc($tag) ?></span>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <span class="text-muted fst-italic">ไม่มีคำสำคัญ</span>
-                        <?php endif; ?>
+                    <div class="separator"></div>
+
+                    <!--begin::รายละเอียด-->
+                    <div>
+                        <h4 class="fw-bold text-gray-800 mb-3">รายละเอียด</h4>
+                        <!-- ✅ แสดง HTML โดยตรง (trust internal WYSIWYG) -->
+                        <div class="fs-6 text-gray-700 lh-lg">
+                            <?php if (!empty($entry['entry_description'])): ?>
+                                <?= $entry['entry_description'] ?>
+                            <?php else: ?>
+                                <span class="text-muted fst-italic">ไม่มีรายละเอียด</span>
+                            <?php endif; ?>
+                        </div>
                     </div>
+                    <!--end::รายละเอียด-->
                 </div>
-                <!--end::คำสำคัญ-->
 
             </div>
             <!--end::Card body-->
@@ -226,10 +227,7 @@
             <!--begin::Card header-->
             <div class="card-header">
                 <div class="card-title">
-                    <h2>ไฟล์แนบ</h2>
-                </div>
-                <div class="card-toolbar">
-                    <span class="badge badge-light-primary"><?= count($files) ?> ไฟล์</span>
+                    <h4><i class="ki-outline ki-file-added fs-2 me-2 text-primary"></i> ไฟล์แนบ (<?= count($files) ?>)</h4>
                 </div>
             </div>
             <!--end::Card header-->
@@ -237,59 +235,57 @@
             <div class="card-body pt-0">
                 <?php if (!empty($files)): ?>
                     <div class="table-responsive">
-                        <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
+                        <table class="table align-middle table-row-dashed fs-6 gy-3">
                             <thead>
-                                <tr class="fw-bold text-muted">
-                                    <th class="min-w-150px">ชื่อไฟล์</th>
+                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                    <th class="min-w-200px">ชื่อไฟล์</th>
                                     <th class="min-w-100px">วันที่อัปโหลด</th>
-                                    <th class="min-w-100px text-end">การดำเนินการ</th>
+                                    <th class="min-w-50px text-end">ดาวน์โหลด</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="fw-semibold text-gray-600">
                                 <?php foreach ($files as $file): ?>
                                     <tr>
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <div class="symbol symbol-50px me-5">
-                                                    <div class="symbol-label bg-light-primary">
+                                                <!-- Icon -->
+                                                <div class="symbol symbol-35px me-3">
+                                                    <span class="symbol-label bg-light-primary">
                                                         <?php
                                                         $extension = pathinfo($file['file_name'], PATHINFO_EXTENSION);
                                                         $iconClass = match(strtolower($extension)) {
-                                                            'pdf' => 'ki-outline ki-file text-danger',
-                                                            'doc', 'docx' => 'ki-outline ki-document text-primary',
-                                                            'xls', 'xlsx' => 'ki-outline ki-some-files text-success',
+                                                            'pdf' => 'ki-outline ki-file-pdf text-danger',
+                                                            'doc', 'docx' => 'ki-outline ki-file-word text-primary',
+                                                            'xls', 'xlsx' => 'ki-outline ki-file-excel text-success',
                                                             'jpg', 'jpeg', 'png', 'gif' => 'ki-outline ki-picture text-warning',
                                                             default => 'ki-outline ki-file text-muted'
                                                         };
                                                         ?>
-                                                        <i class="<?= $iconClass ?> fs-2x"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="d-flex flex-column">
-                                                    <span class="text-gray-800 fw-bold text-hover-primary mb-1">
-                                                        <?= esc($file['original_name'] ?? $file['file_name']) ?>
+                                                        <i class="<?= $iconClass ?> fs-2"></i>
                                                     </span>
+                                                </div>
+                                                <!-- Details -->
+                                                <div class="d-flex flex-column">
+                                                    <a href="<?= base_url($file['file_path']) ?>" target="_blank" class="text-gray-800 text-hover-primary mb-1">
+                                                        <?= esc($file['original_name'] ?? $file['file_name']) ?>
+                                                    </a>
                                                     <?php if (!empty($file['original_name']) && $file['original_name'] !== $file['file_name']): ?>
-                                                        <span class="text-muted fs-7">ชื่อไฟล์ในระบบ: <?= esc($file['file_name']) ?></span>
+                                                        <span class="text-muted fs-8"><?= esc($file['file_name']) ?></span>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="text-muted fw-semibold d-block fs-7">
-                                                <?= date('d/m/Y', strtotime($file['uploaded_date'])) ?>
-                                            </span>
-                                            <span class="text-muted fw-semibold d-block fs-8">
-                                                <?= date('H:i:s', strtotime($file['uploaded_date'])) ?>
-                                            </span>
+                                            <div class="d-flex flex-column">
+                                                <span><?= date('d/m/Y', strtotime($file['uploaded_date'])) ?></span>
+                                                <span class="text-muted fs-8"><?= date('H:i', strtotime($file['uploaded_date'])) ?></span>
+                                            </div>
                                         </td>
                                         <td class="text-end">
                                             <a href="<?= base_url($file['file_path']) ?>"
-                                               target="_blank"
-                                               class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary"
-                                               data-bs-toggle="tooltip"
-                                               title="ดาวน์โหลดไฟล์">
-                                                <i class="ki-outline ki-down-2 fs-3"></i>
+                                               download="<?= esc($file['original_name'] ?? $file['file_name']) ?>"
+                                               class="btn btn-sm btn-icon btn-light-primary btn-active-primary w-30px h-30px">
+                                                <i class="ki-outline ki-arrow-down fs-3"></i>
                                             </a>
                                         </td>
                                     </tr>
@@ -298,12 +294,12 @@
                         </table>
                     </div>
                 <?php else: ?>
-                    <div class="text-center py-10">
-                        <div class="mb-5">
-                            <i class="ki-outline ki-file-deleted text-muted fs-5x"></i>
+                    <div class="alert alert-dashed border-gray-300 d-flex flex-column flex-sm-row p-5 mb-0">
+                        <i class="ki-outline ki-file fs-2hx text-muted me-4 mb-5 mb-sm-0"></i>
+                        <div class="d-flex flex-column pe-0 pe-sm-10">
+                            <h5 class="mb-1">ไม่มีไฟล์แนบ</h5>
+                            <span class="text-muted">รายการนี้ไม่ได้แนบไฟล์ประกอบ</span>
                         </div>
-                        <div class="text-muted fs-5 fw-semibold">ไม่มีไฟล์แนบ</div>
-                        <div class="text-muted fs-7">รายการนี้ยังไม่มีไฟล์แนบใด ๆ</div>
                     </div>
                 <?php endif; ?>
             </div>

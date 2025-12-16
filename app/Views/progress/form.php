@@ -240,16 +240,34 @@
             <div class="card-body pt-0">
                 <!--begin::ค่าความคืบหน้า-->
                 <div class="mb-10 fv-row">
-                    <label class="required form-label">ค่าความคืบหน้า</label>
-                    <div class="input-group">
-                        <input type="number" step="0.01" name="progress_value" class="form-control"
-                               placeholder="0.00" value="<?= old('progress_value', $progress['progress_value'] ?? '') ?>"
-                               id="progress_value_input" required />
-                        <span class="input-group-text"><?= esc($keyresult['target_unit']) ?></span>
-                    </div>
-                    <div class="form-text">
-                        เป้าหมาย: <?= esc($keyresult['target_value']) ?> <?= esc($keyresult['target_unit']) ?>
-                        <span id="progress_percentage_display" class="fw-bold text-primary ms-3"></span>
+                    <label class="required form-label">ค่าความคืบหน้า (%)</label>
+                    <div class="d-flex align-items-center mb-5">
+                       <div class="flex-grow-1 me-5">
+                           <input type="range" class="form-range" id="progress_percentage_slider"
+                                  min="0" max="100" step="1"
+                                  value="<?= old('progress_percentage', $progress['progress_percentage'] ?? 0) ?>">
+                       </div>
+                       <div class="w-125px">
+                            <div class="input-group">
+                               <input type="number" class="form-control form-control-solid text-center fw-bold" id="progress_percentage_input"
+                                      name="progress_percentage"
+                                      min="0" max="100" step="0.1"
+                                      value="<?= old('progress_percentage', $progress['progress_percentage'] ?? 0) ?>" required>
+                               <span class="input-group-text">%</span>
+                           </div>
+                       </div>
+                   </div>
+
+                    <div class="alert alert-secondary d-flex align-items-center p-5">
+                        <i class="ki-outline ki-calculator fs-2hx text-primary me-4"></i>
+                        <div class="d-flex flex-column">
+                            <span class="fw-bold fs-6">ค่าจริงที่คำนวณได้ (Raw Value)</span>
+                            <span class="text-gray-700">
+                                <span id="calculated_raw_value" class="fw-bold text-dark fs-4">0</span>
+                                <?= esc($keyresult['target_unit']) ?>
+                                <span class="text-muted fs-7 ms-2">(จากเป้าหมาย <?= esc($keyresult['target_value']) ?> <?= esc($keyresult['target_unit']) ?>)</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <!--end::ค่าความคืบหน้า-->
