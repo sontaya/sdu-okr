@@ -134,12 +134,25 @@
 
                         </div>
                         <!--end::Info-->
+
+                        <!--begin::Department list badge -->
                         <div class="d-flex flex-column">
                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                 <?php foreach ($departments as $dep): ?>
                                     <?php
                                         $role = strtolower($dep['role']);
-                                        $badgeClass = $role === 'leader' ? 'badge badge-primary' : 'badge badge-light-primary';
+                                        $badgeClass = '';
+
+                                        if ($role === 'leader') {
+                                            $badgeClass = 'badge badge-primary';
+                                        } else {
+                                            // CoWorking
+                                            if (isset($dep['entry_count']) && $dep['entry_count'] > 0) {
+                                                $badgeClass = 'badge badge-light-primary';
+                                            } else {
+                                                $badgeClass = 'badge badge-light-secondary'; // Use secondary for gray as it's standard metronic
+                                            }
+                                        }
                                     ?>
                                     <span class="<?= $badgeClass ?>" title="<?= esc($dep['full_name']) ?>">
                                         <?= esc($dep['short_name']) ?>
@@ -147,6 +160,7 @@
                                 <?php endforeach; ?>
                             </div>
                         </div>
+                        <!--end::Department list badge-->
 
                     </div>
                     <!--end::Wrapper-->
@@ -215,7 +229,7 @@
                             </th>
                             <th class="min-w-300px">รายการข้อมูล</th>
                             <th class="min-w-150px">คำสำคัญ</th>
-                            <th class="min-w-100px">ไฟล์แนบ</th>
+                            <th class="min-w-150px">หน่วยงานเจ้าของข้อมูล</th>
                             <th class="min-w-100px">สถานะ</th>
                             <th class="min-w-100px">วันที่สร้าง</th>
                             <th class="text-end min-w-70px">การดำเนินการ</th>
@@ -243,6 +257,15 @@
                                             </div>
                                         <?php endif; ?>
                                         <!--end::Description-->
+
+                                        <!--begin::Files Count-->
+                                        <?php if ($entry['file_count'] > 0): ?>
+                                            <div class="d-flex align-items-center mt-2">
+                                                <i class="ki-outline ki-file fs-4 text-primary me-2"></i>
+                                                <span class="fw-bold text-primary"><?= $entry['file_count'] ?> ไฟล์</span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <!--end::Files Count-->
                                     </div>
                                 </td>
                                 <td>
@@ -263,11 +286,10 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if ($entry['file_count'] > 0): ?>
-                                        <div class="d-flex align-items-center">
-                                            <i class="ki-outline ki-file fs-4 text-primary me-2"></i>
-                                            <span class="fw-bold text-primary"><?= $entry['file_count'] ?></span>
-                                        </div>
+                                    <?php if (!empty($entry['department_name'])): ?>
+                                        <span class="text-gray-800 fs-7">
+                                            <?= esc($entry['department_name']) ?>
+                                        </span>
                                     <?php else: ?>
                                         <span class="text-muted fs-7">-</span>
                                     <?php endif; ?>

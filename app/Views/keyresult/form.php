@@ -150,6 +150,39 @@
                 </div>
                 <!--end::สถานะรายการข้อมูล-->
 
+                <!--begin::Department-->
+                <div class="card card-flush py-4">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <h2>หน่วยงานเจ้าของข้อมูล</h2>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <?php
+                            // Logic for selected department
+                            $current_dept = $entry['department_id'] ?? $user_department_id ?? '';
+                            $is_disabled = !empty($is_restricted_department);
+                        ?>
+                        <select class="form-select mb-2" name="department_id" data-control="select2" data-hide-search="false" data-placeholder="เลือกหน่วยงาน" <?= $is_disabled ? 'disabled' : '' ?>>
+                            <option></option>
+                            <?php if (!empty($departments_list)): ?>
+                                <?php foreach ($departments_list as $dept): ?>
+                                    <option value="<?= $dept['id'] ?>" <?= ($dept['id'] == $current_dept) ? 'selected' : '' ?>>
+                                        <?= esc($dept['short_name'] . ' - ' . $dept['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+
+                        <?php if ($is_disabled): ?>
+                            <input type="hidden" name="department_id" value="<?= esc($current_dept) ?>">
+                        <?php endif; ?>
+
+                        <div class="text-muted fs-7">ระบุหน่วยงานเจ้าของข้อมูล</div>
+                    </div>
+                </div>
+                <!--end::Department-->
+
             </div>
             <!--end::Aside column-->
             <!--begin::Main column-->

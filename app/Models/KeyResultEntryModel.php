@@ -16,7 +16,8 @@ class KeyResultEntryModel extends Model
         'entry_description',
         'entry_status',
         'created_by',
-        'created_date'
+        'created_date',
+        'department_id'
     ];
 
     /**
@@ -35,6 +36,7 @@ class KeyResultEntryModel extends Model
                 kre.entry_status,
                 kre.created_date,
                 kre.created_by,
+                kre.department_id,
                 u.full_name as creator_name
             ')
             ->join('users u', 'kre.created_by = u.id', 'left')
@@ -59,6 +61,7 @@ class KeyResultEntryModel extends Model
                 kre.entry_status,
                 kre.created_date,
                 kre.created_by,
+                kre.department_id,
                 u.full_name as creator_name
             ')
             ->join('users u', 'kre.created_by = u.id', 'left')

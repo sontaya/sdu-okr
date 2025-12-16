@@ -208,8 +208,11 @@ class KeyresultController extends TemplateController
                 kre.entry_status,
                 kre.created_date,
                 kre.created_by,
+                d.name as department_name,
+                d.short_name as department_short_name,
                 COUNT(krf.id) as file_count
             ')
+            ->join('departments d', 'kre.department_id = d.id', 'left')
             ->join('key_result_files krf', 'kre.id = krf.entry_id', 'left')
             ->where('kre.key_result_id', $keyResultId);
 
@@ -252,6 +255,16 @@ class KeyresultController extends TemplateController
             $this->data['keyresult'] = $results[0] ?? null;
         }
 
+        // ✅ Data for Department Dropdown (Leader & CoWorking Only)
+        $model = new KeyresultModel();
+        // กรณี Add New: ใช้ ID จาก parameter
+        $target_key_result_id = $id ?? $this->request->getPost('key_result_id');
+        $this->data['departments_list'] = $model->getWorkingDepartments($target_key_result_id);
+
+        $this->data['user_department_id'] = session('department');
+        // Check if user is restricted (Reporter only, not Admin)
+        $this->data['is_restricted_department'] = isReporter() && !isAdmin();
+
         $this->data['key_result_id'] = $id;
         $this->contentTemplate = 'keyresult/form';
         return $this->render();
@@ -271,6 +284,7 @@ class KeyresultController extends TemplateController
             'entry_name' => $request->getPost('entry_name'),
             'entry_description' => $request->getPost('entry_description'),
             'entry_status' => $request->getPost('entry_status'),
+            'department_id' => $request->getPost('department_id'), // ✅ Save Department
             'created_by' => session('user_id'),
             'created_date' => date('Y-m-d H:i:s'),
         ];
@@ -365,6 +379,12 @@ class KeyresultController extends TemplateController
         $this->data['keyresult'] = $keyresultResults[0] ?? null;
 
 
+        // ✅ Data for Department Dropdown (Leader & CoWorking Only)
+        $this->data['departments_list'] = $keyresultModel->getWorkingDepartments($entry['key_result_id']);
+        $this->data['user_department_id'] = session('department');
+        $this->data['is_restricted_department'] = isReporter() && !isAdmin();
+
+
         $this->contentTemplate = 'keyresult/form';
         return $this->render();
     }
@@ -385,7 +405,8 @@ class KeyresultController extends TemplateController
         $data = [
             'entry_name' => $this->request->getPost('entry_name'),
             'entry_description' => $this->request->getPost('entry_description'),
-            'entry_status' => $this->request->getPost('entry_status')
+            'entry_status' => $this->request->getPost('entry_status'),
+            'department_id' => $this->request->getPost('department_id') // ✅ Update Department
         ];
 
         $entryModel->update($id, $data);
@@ -514,10 +535,6 @@ class KeyresultController extends TemplateController
                 'message' => 'เกิดข้อผิดพลาดในการลบรายการ'
             ]);
         }
-
-        // ✅ Clear cache หลังจากลบ
-        $model = new KeyresultModel();
-        $model->clearKeyResultsCache($entry['key_result_id']);
     }
 
     public function getEntryDetails($id)

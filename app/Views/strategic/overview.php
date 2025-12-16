@@ -409,7 +409,18 @@
                                             if (!empty($item['departments'])):
                                                 foreach ($item['departments'] as $dept):
                                                     $role = strtolower($dept['role']);
-                                                    $badgeClass = $role === 'leader' ? 'badge badge-primary' : 'badge badge-light-primary';
+                                                    $badgeClass = '';
+
+                                                    if ($role === 'leader') {
+                                                        $badgeClass = 'badge badge-primary';
+                                                    } else {
+                                                        // CoWorking
+                                                        if (isset($dept['entry_count']) && $dept['entry_count'] > 0) {
+                                                            $badgeClass = 'badge badge-light-primary';
+                                                        } else {
+                                                            $badgeClass = 'badge badge-light-secondary';
+                                                        }
+                                                    }
 
                                             ?>
                                                 <span class="<?= $badgeClass ?>" title="<?= esc($dept['full_name']) ?> (<?= $dept['role'] ?>)">

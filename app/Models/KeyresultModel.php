@@ -109,9 +109,39 @@ class KeyresultModel extends Model
     public function getDepartmentsByKeyResult($key_result_id)
     {
         return $this->db->table('key_result_departments kd')
-            ->select('kd.role, d.short_name, d.name AS full_name')
+            ->select('
+                kd.role,
+                d.short_name,
+                d.name AS full_name,
+                (SELECT COUNT(*)
+                 FROM key_result_entries kre
+                 WHERE kre.key_result_id = kd.key_result_id
+                 AND kre.department_id = kd.department_id
+                 AND kre.entry_status = "published") as entry_count
+            ')
             ->join('departments d', 'kd.department_id = d.id')
             ->where('kd.key_result_id', $key_result_id)
+            ->get()
+            ->getResultArray();
+    }
+
+    public function getWorkingDepartments($key_result_id)
+    {
+        return $this->db->table('key_result_departments kd')
+            ->select('d.id, d.name, d.short_name, kd.role')
+            ->join('departments d', 'kd.department_id = d.id')
+            ->where('kd.key_result_id', $key_result_id)
+            ->whereIn('kd.role', ['Leader', 'CoWorking'])
+            ->orderBy('d.short_name', 'ASC') // เรียงตามชื่อย่อหน่วยงาน
+            ->get()
+            ->getResultArray();
+    }
+
+    public function getAllDepartments()
+    {
+        return $this->db->table('departments')
+            ->select('id, name, short_name')
+            ->orderBy('id', 'ASC')
             ->get()
             ->getResultArray();
     }
@@ -151,7 +181,8 @@ class KeyresultModel extends Model
                         "department_id", d.id,
                         "role", krd.role,
                         "short_name", d.short_name,
-                        "full_name", d.name
+                        "full_name", d.name,
+                        "entry_count", (SELECT COUNT(*) FROM key_result_entries kre WHERE kre.key_result_id = krd.key_result_id AND kre.department_id = krd.department_id AND kre.entry_status = "published")
                     ) ORDER BY FIELD(krd.role, "Leader", "CoWorking"), d.short_name), "]")
                 FROM key_result_departments krd
                 JOIN departments d ON krd.department_id = d.id
@@ -264,7 +295,7 @@ class KeyresultModel extends Model
                 ->get()
                 ->getResultArray(),
 
-            'years' => ['2568', '2567', '2566'],
+            'years' => ['2571','2570','2569','2568'],
 
             'status_options' => [
                 'no_report' => 'ยังไม่มีรายงาน',

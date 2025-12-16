@@ -246,3 +246,17 @@ http://localhost:8083/sdu-okr/progress/form/12
 ปรับฟอร์มบันทึกข้อมูลรายงานความคืบหน้า
 ย้ายสถานะรายงาน , รอบการรายงาน ไปไว้ฝั่งขวา เพื่อเพิ่มพื้นที่การแสดงผลหลักให้เต็ม
 จัดรูปแบบ ตำแหน่งการจัดวาง ให้เหมาะสม
+
+http://localhost:8083/sdu-okr/keyresult/form/1
+ที่หน้า บันทึกรายการข้อมูล ต้องการให้
+- เพิ่ม dropdown สำหรับเลือกหน่วยงานเจ้าของข้อมูล โดยดึงข้อมูลหน่วยงานจากตาราง departments
+- กรณีที่ผู้ใช้งานได้สิทธิ Role = Reporter ให้เลือกหน่วยงานตัวเองอัตโนมัติ เปลี่ยนไม่ได้
+- ฟิวส์สำหรับจัดเก็บข้อมูลหน่วยงานเจ้าของข้อมูล ให้ชื่อฟิวส์เป็น department_id ผมเพิ่มฟิวส์นี้แล้วในตาราง key_result_entries
+- ปรับการจัดวางให้เหมาะสม
+
+database.default.hostname = mariadb
+database.default.database = okr_db
+database.default.username = root
+database.default.password = 1234
+database.default.DBDriver = MySQLi
+database.default.port = 3306
