@@ -1,29 +1,33 @@
 "use strict";
 
 // Executive Dashboard JavaScript
-var ExecutiveDashboard = function() {
+var ExecutiveDashboard = function () {
 
     // Private variables (Mock version - fixed values)
     var refreshInterval;
     var currentYear = '2568';
     var currentQuarter = '4';
 
+    // Get mode from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentMode = urlParams.get('mode');
+
     // Private functions
-    var initSelectors = function() {
+    var initSelectors = function () {
         // Disable selectors for mock version (fixed Q4 2568)
         $('#yearSelector, #quarterSelector').prop('disabled', true);
 
         // Refresh button (mock refresh)
-        $('#refreshData').on('click', function() {
+        $('#refreshData').on('click', function () {
             // Simulate refresh with animation
             $(this).addClass('spinner spinner-sm spinner-white').prop('disabled', true);
 
-            setTimeout(function() {
+            setTimeout(function () {
                 $('#refreshData').removeClass('spinner spinner-sm spinner-white').prop('disabled', false);
 
                 // Add pulse animation to cards
                 $('.card').addClass('animate__animated animate__pulse');
-                setTimeout(function() {
+                setTimeout(function () {
                     $('.card').removeClass('animate__animated animate__pulse');
                 }, 1000);
 
@@ -37,13 +41,10 @@ var ExecutiveDashboard = function() {
             }, 1000);
         });
 
-        // Trend type selector
-        $('#trendType').on('change', function() {
-            loadTrendChart($(this).val());
-        });
+
     };
 
-    var refreshDashboard = function(forceRefresh = false) {
+    var refreshDashboard = function (forceRefresh = false) {
         if (forceRefresh) {
             KTApp.showPageLoading();
         }
@@ -60,31 +61,32 @@ var ExecutiveDashboard = function() {
         } else {
             // AJAX refresh for specific components
             refreshOverviewData();
-            loadTrendChart($('#trendType').val());
+            // loadTrendChart($('#trendType').val()); // Removed as Trends section is removed
             refreshDepartmentList();
         }
     };
 
-    var refreshOverviewData = function() {
+    var refreshOverviewData = function () {
         $.ajax({
             url: '/dashboard/api/overview',
             method: 'GET',
             data: {
                 year: currentYear,
-                quarter: currentQuarter
+                quarter: currentQuarter,
+                mode: currentMode
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.success && response.data) {
                     updateOverviewDisplay(response.data);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('Error refreshing overview data:', error);
             }
         });
     };
 
-    var updateOverviewDisplay = function(data) {
+    var updateOverviewDisplay = function (data) {
         // Update overall progress
         $('#overallProgress').text(Math.round(data.overall_progress || 0) + '%');
 
@@ -93,12 +95,12 @@ var ExecutiveDashboard = function() {
 
         // Add animation
         $('#overallProgress').addClass('animate__animated animate__pulse');
-        setTimeout(function() {
+        setTimeout(function () {
             $('#overallProgress').removeClass('animate__animated animate__pulse');
         }, 1000);
     };
 
-    var refreshDepartmentList = function() {
+    var refreshDepartmentList = function () {
         $.ajax({
             url: '/dashboard/api/departments',
             method: 'GET',
@@ -106,70 +108,98 @@ var ExecutiveDashboard = function() {
                 year: currentYear,
                 quarter: currentQuarter,
                 limit: 10,
-                sort: 'progress_desc'
+                sort: 'progress_desc',
+                mode: currentMode
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.success && response.data) {
                     updateDepartmentList(response.data);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('Error refreshing department data:', error);
             }
         });
     };
 
-    var updateDepartmentList = function(departments) {
+    var updateDepartmentList = function (departments) {
         var container = $('#departmentList');
         var html = '';
 
-        departments.forEach(function(dept, index) {
+        departments.forEach(function (dept, index) {
             var progressClass = dept.avg_progress >= 80 ? 'bg-success' :
-                              (dept.avg_progress >= 60 ? 'bg-warning' : 'bg-danger');
+                (dept.avg_progress >= 60 ? 'bg-warning' : 'bg-danger');
+
+            var badgeHtml = '';
+            if (dept.avg_progress >= 80) {
+                badgeHtml = '<span class="badge badge-light-success fw-bold">Excellent</span>';
+            } else if (dept.avg_progress >= 60) {
+                badgeHtml = '<span class="badge badge-light-warning fw-bold">Good</span>';
+            } else {
+                badgeHtml = '<span class="badge badge-light-danger fw-bold">Needs Improv.</span>';
+            }
 
             html += `
-                <div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-                    <div class="d-flex align-items-center">
-                        <div class="symbol symbol-40px me-4">
-                            <span class="symbol-label fs-6 fw-bold bg-light-primary text-primary">${index + 1}</span>
+                <tr>
+                    <td>
+                        <div class="symbol symbol-35px">
+                            <span class="symbol-label fw-bold bg-light-primary text-primary">${index + 1}</span>
                         </div>
+                    </td>
+                    <td>
                         <div class="d-flex flex-column">
-                            <a href="#" class="fs-5 text-dark text-hover-primary fw-bold">${dept.short_name}</a>
-                            <div class="fs-6 fw-semibold text-gray-400">${dept.total_key_results} KRs (${dept.leader_count} Leader, ${dept.coworking_count} CoWork)</div>
+                            <a href="#" class="text-dark fw-bold text-hover-primary fs-6">${dept.short_name}</a>
+                            <span class="text-muted fw-semibold fs-7">${dept.name}</span>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <span class="text-gray-900 fw-bolder fs-6 me-2">${Math.round(dept.avg_progress)}%</span>
-                        <div class="progress h-6px w-60px">
-                            <div class="progress-bar ${progressClass}" role="progressbar" style="width: ${dept.avg_progress}%"></div>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-light fw-bold fs-7">${dept.total_key_results}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-light-info fs-8 me-1" title="Leader">${dept.leader_count} L</span>
+                        <span class="badge badge-light-success fs-8" title="Co-Working">${dept.coworking_count} C</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="text-gray-800 fw-bold fs-6 me-2">${Math.round(dept.avg_progress * 10) / 10}%</span>
+                            <div class="progress h-6px w-100 bg-light">
+                                <div class="progress-bar ${progressClass}" role="progressbar" style="width: ${dept.avg_progress}%"></div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </td>
+                    <td class="text-end">
+                        ${badgeHtml}
+                    </td>
+                </tr>
             `;
         });
 
         container.html(html);
     };
 
-    var initAutoRefresh = function() {
+    var initAutoRefresh = function () {
         // Auto refresh every 5 minutes
-        refreshInterval = setInterval(function() {
+        refreshInterval = setInterval(function () {
             refreshOverviewData();
         }, 300000); // 5 minutes
     };
 
     // Public methods
     return {
-        init: function() {
+        currentYear: currentYear,
+        currentQuarter: currentQuarter,
+        currentMode: currentMode,
+
+        init: function () {
             initSelectors();
             initAutoRefresh();
         },
 
-        refresh: function() {
+        refresh: function () {
             refreshDashboard(true);
         },
 
-        destroy: function() {
+        destroy: function () {
             if (refreshInterval) {
                 clearInterval(refreshInterval);
             }
@@ -179,7 +209,7 @@ var ExecutiveDashboard = function() {
 }();
 
 // Global functions (accessible from HTML)
-window.sortDepartments = function(sortType) {
+window.sortDepartments = function (sortType) {
     $.ajax({
         url: '/dashboard/api/departments',
         method: 'GET',
@@ -187,9 +217,10 @@ window.sortDepartments = function(sortType) {
             year: ExecutiveDashboard.currentYear || '2568',
             quarter: ExecutiveDashboard.currentQuarter || '',
             limit: 10,
-            sort: sortType
+            sort: sortType,
+            mode: ExecutiveDashboard.currentMode || ''
         },
-        success: function(response) {
+        success: function (response) {
             if (response.success && response.data) {
                 updateDepartmentList(response.data);
             }
@@ -197,7 +228,7 @@ window.sortDepartments = function(sortType) {
     });
 };
 
-window.viewKeyResult = function(keyResultId) {
+window.viewKeyResult = function (keyResultId) {
     KTApp.showPageLoading();
 
     $.ajax({
@@ -207,12 +238,12 @@ window.viewKeyResult = function(keyResultId) {
             year: ExecutiveDashboard.currentYear || '2568',
             quarter: ExecutiveDashboard.currentQuarter || ''
         },
-        success: function(response) {
+        success: function (response) {
             if (response.success && response.data) {
                 showKeyResultModal(response.data);
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             Swal.fire({
                 text: "เกิดข้อผิดพลาดในการโหลดข้อมูล Key Result",
                 icon: "error",
@@ -223,13 +254,13 @@ window.viewKeyResult = function(keyResultId) {
                 }
             });
         },
-        complete: function() {
+        complete: function () {
             KTApp.hidePageLoading();
         }
     });
 };
 
-window.showKeyResultModal = function(data) {
+window.showKeyResultModal = function (data) {
     var modalBody = document.getElementById('keyResultModalBody');
 
     var html = `
@@ -280,7 +311,7 @@ window.showKeyResultModal = function(data) {
     `;
 
     if (data.departments && data.departments.length > 0) {
-        data.departments.forEach(function(dept) {
+        data.departments.forEach(function (dept) {
             var badgeClass = dept.role === 'Leader' ? 'badge-light-primary' : 'badge-light-secondary';
             html += `
                 <div class="d-flex align-items-center mb-3">
@@ -301,7 +332,7 @@ window.showKeyResultModal = function(data) {
     `;
 
     if (data.progress_history && data.progress_history.length > 0) {
-        data.progress_history.forEach(function(history) {
+        data.progress_history.forEach(function (history) {
             html += `
                 <div class="timeline-item">
                     <div class="timeline-label fw-bold text-gray-800 fs-7">${history.quarter_name}</div>
@@ -330,7 +361,7 @@ window.showKeyResultModal = function(data) {
     modal.show();
 };
 
-window.assignAction = function(keyResultId) {
+window.assignAction = function (keyResultId) {
     Swal.fire({
         title: 'Assign Action Item',
         text: 'คุณต้องการกำหนดการดำเนินการสำหรับ Key Result นี้หรือไม่?',
@@ -351,7 +382,7 @@ window.assignAction = function(keyResultId) {
     });
 };
 
-window.exportDashboard = function() {
+window.exportDashboard = function () {
     Swal.fire({
         title: 'Export Dashboard Report',
         html: `
@@ -418,11 +449,11 @@ window.exportDashboard = function() {
 };
 
 // On document ready
-KTUtil.onDOMContentLoaded(function() {
+KTUtil.onDOMContentLoaded(function () {
     ExecutiveDashboard.init();
 });
 
 // Cleanup on page unload
-window.addEventListener('beforeunload', function() {
+window.addEventListener('beforeunload', function () {
     ExecutiveDashboard.destroy();
 });

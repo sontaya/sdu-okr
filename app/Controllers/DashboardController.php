@@ -32,21 +32,59 @@ class DashboardController extends TemplateController
         $year = '2568'; // Fixed year
         $quarter = '4'; // Fixed quarter - Q4 only
 
-        // Mock Data - จำลองข้อมูลแทนการเชื่อมต่อฐานข้อมูล
-        $mockData = $this->getMockDashboardData();
+        // 1. Try to get real data for Overview to check if system has data
+        $overview = $this->dashboardModel->getOrganizationOverview($year, $quarter);
+
+        // 2. Decide whether to use Real Data or Mock Data
+        // Enable mock mode via URL ?mode=mock or if DB is empty
+        $forceMock = $this->request->getGet('mode') === 'mock';
+        $useMock = $forceMock || ($overview['total_key_results'] ?? 0) == 0;
+
+        if ($useMock) {
+            // Hybrid Mock: Use Real Structure + Mock Metrics
+            $dashboardData = [
+                'overview' => $this->injectMockOverview($overview),
+                'strategic_goals' => $this->injectMockStrategic($this->dashboardModel->getAllStrategicGoalsProgress($year, $quarter)),
+                'departments' => $this->injectMockDepartments($this->dashboardModel->getAllDepartmentsProgress($year, $quarter)['departments']),
+                'trends' => [],
+                'risks' => [],
+                'analytics' => [],
+                'recent_activities' => [],
+                'upcoming_deadlines' => []
+            ];
+
+            // Format departments for view (needs pagination structure)
+            $dashboardData['departments'] = [
+                'departments' => $dashboardData['departments'],
+                'pagination' => []
+            ];
+        } else {
+            $dashboardData = [
+                'overview' => $overview,
+                'strategic_goals' => $this->dashboardModel->getStrategicGoalsProgress($year, $quarter),
+                'departments' => $this->dashboardModel->getDepartmentProgress($year, $quarter, ['limit' => 100]),
+                // Keep these generic/empty as they are removed from View,
+                // but kept here to prevent undefined index error if referenced elsewhere
+                'trends' => [],
+                'risks' => [],
+                'analytics' => [],
+                'recent_activities' => [],
+                'upcoming_deadlines' => []
+            ];
+        }
 
         $this->data = array_merge($this->data, [
             'title' => 'OKR Executive Dashboard',
             'year' => $year,
             'quarter' => $quarter,
-            'overview' => $mockData['overview'],
-            'strategic_goals' => $mockData['strategic_goals'],
-            'departments' => $mockData['departments'],
-            'trends' => $mockData['trends'],
-            'risks' => $mockData['risks'],
-            'analytics' => $mockData['analytics'],
-            'recent_activities' => $mockData['recent_activities'],
-            'upcoming_deadlines' => $mockData['upcoming_deadlines'],
+            'overview' => $dashboardData['overview'],
+            'strategic_goals' => $dashboardData['strategic_goals'],
+            'departments' => $dashboardData['departments'],
+            'trends' => $dashboardData['trends'],
+            'risks' => $dashboardData['risks'],
+            'analytics' => $dashboardData['analytics'],
+            'recent_activities' => $dashboardData['recent_activities'],
+            'upcoming_deadlines' => $dashboardData['upcoming_deadlines'],
             'cssSrc' => [
                 'assets/themes/metronic38/assets/plugins/custom/datatables/datatables.bundle.css',
                 'assets/themes/metronic38/assets/plugins/global/plugins.bundle.css'
@@ -299,11 +337,21 @@ class DashboardController extends TemplateController
      */
     public function apiOverview()
     {
-        $mockData = $this->getMockDashboardData();
+        $year = '2568';
+        $quarter = '4';
+
+        // Try to get real data
+        $overview = $this->dashboardModel->getOrganizationOverview($year, $quarter);
+
+        // Fallback to mock if empty or forced
+        $forceMock = $this->request->getGet('mode') === 'mock';
+        if ($forceMock || ($overview['total_key_results'] ?? 0) == 0) {
+            $overview = $this->injectMockOverview($overview);
+        }
 
         return $this->response->setJSON([
             'success' => true,
-            'data' => $mockData['overview'],
+            'data' => $overview,
             'timestamp' => date('Y-m-d H:i:s')
         ]);
     }
@@ -358,37 +406,61 @@ class DashboardController extends TemplateController
      */
     public function apiDepartments()
     {
+        $year = '2568';
+        $quarter = '4';
+
         $page = $this->request->getGet('page') ?? 1;
         $limit = $this->request->getGet('limit') ?? 10;
         $sortBy = $this->request->getGet('sort') ?? 'progress_desc';
 
-        $mockData = $this->getMockDashboardData();
-        $departments = $mockData['departments']['departments'];
+        // Check if we need to use mock data
+        $overview = $this->dashboardModel->getOrganizationOverview($year, $quarter);
 
-        // Sort departments
-        if ($sortBy === 'progress_desc') {
-            usort($departments, function($a, $b) {
-                return $b['avg_progress'] <=> $a['avg_progress'];
-            });
-        } elseif ($sortBy === 'name_asc') {
-            usort($departments, function($a, $b) {
-                return $a['short_name'] <=> $b['short_name'];
-            });
+        $forceMock = $this->request->getGet('mode') === 'mock';
+        $useMock = $forceMock || ($overview['total_key_results'] ?? 0) == 0;
+
+        if ($useMock) {
+            // Get REAL departments but without limit first to sort correctly
+            $allDepartments = $this->dashboardModel->getAllDepartmentsProgress($year, $quarter); // Get ALL departments including empty ones
+            $departments = $this->injectMockDepartments($allDepartments['departments']);
+
+            // Sort logic (Must re-sort because progress changed)
+            if ($sortBy === 'progress_desc') {
+                usort($departments, function($a, $b) {
+                    return $b['avg_progress'] <=> $a['avg_progress'];
+                });
+            } elseif ($sortBy === 'name_asc') {
+                usort($departments, function($a, $b) {
+                    return strcasecmp($a['short_name'], $b['short_name']);
+                });
+            }
+
+            // Paginate manually
+            $offset = ($page - 1) * $limit;
+            $paginatedDepartments = array_slice($departments, $offset, $limit);
+
+            $result = [
+                'departments' => $paginatedDepartments,
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $limit,
+                    'total' => count($departments),
+                    'total_pages' => ceil(count($departments) / $limit)
+                ]
+            ];
+        } else {
+            // Real Data Logic (Database handles sort/limit)
+            $result = $this->dashboardModel->getDepartmentProgress($year, $quarter, [
+                'page' => $page,
+                'limit' => $limit,
+                'sort' => $sortBy
+            ]);
         }
-
-        // Paginate
-        $offset = ($page - 1) * $limit;
-        $paginatedDepartments = array_slice($departments, $offset, $limit);
 
         return $this->response->setJSON([
             'success' => true,
-            'data' => $paginatedDepartments,
-            'pagination' => [
-                'current_page' => $page,
-                'per_page' => $limit,
-                'total' => count($departments),
-                'total_pages' => ceil(count($departments) / $limit)
-            ]
+            'data' => $result['departments'],
+            'pagination' => $result['pagination']
         ]);
     }
 
@@ -515,5 +587,78 @@ class DashboardController extends TemplateController
         // ...
 
         return $this->response->download($filename, null);
+    }
+    private function injectMockOverview($overview)
+    {
+        $total = $overview['total_key_results'] ?? 0;
+
+        if ($total == 0) {
+            // Totally empty DB, use full mock
+            return $this->getMockDashboardData()['overview'];
+        }
+
+        // Generate random status breakdown that sums up to total
+        $onTrack = rand(floor($total * 0.4), floor($total * 0.7));
+        $remaining = $total - $onTrack;
+
+        $atRisk = rand(floor($remaining * 0.3), floor($remaining * 0.6));
+        $remaining = $remaining - $atRisk;
+
+        $behind = rand(0, $remaining);
+        $notStarted = $remaining - $behind;
+
+        $overview['overall_progress'] = rand(65, 85) + (rand(0, 9) / 10); // 65.0 - 85.9%
+        $overview['on_track'] = $onTrack;
+        $overview['at_risk'] = $atRisk;
+        $overview['behind'] = $behind;
+        $overview['not_started'] = $notStarted;
+        $overview['reporting_rate'] = rand(85, 98);
+
+        return $overview;
+    }
+
+    private function injectMockStrategic($goals)
+    {
+        foreach ($goals as &$goal) {
+            // Requirement: "Use Real KRs", "Mock Progress"
+            if (($goal['total_key_results'] ?? 0) > 0) {
+                $goal['avg_progress'] = rand(40, 95) + (rand(0, 9) / 10);
+
+                // Approximate counts based on progress
+                $total = $goal['total_key_results'];
+                if ($goal['avg_progress'] >= 80) {
+                    $goal['on_track_count'] = floor($total * 0.8);
+                } else {
+                    $goal['on_track_count'] = floor($total * 0.5);
+                }
+            } else {
+                $goal['avg_progress'] = 0;
+                $goal['on_track_count'] = 0;
+            }
+        }
+        return $goals;
+    }
+
+    private function injectMockDepartments($departments)
+    {
+        foreach ($departments as &$dept) {
+            $total = (int)($dept['total_key_results'] ?? 0);
+
+            // Only randomize if there are actual KRs
+            if ($total > 0) {
+                 $dept['avg_progress'] = rand(50, 98) + (rand(0, 9) / 10);
+
+                 // Mock Role Distribution if Leader count is suspiciously 0
+                 // This ensures the dashboard looks "active" in mock mode
+                 if (($dept['leader_count'] ?? 0) == 0) {
+                     $mockLeader = max(1, ceil($total * 0.3)); // Ensure at least 1 leader if total > 0
+                     $dept['leader_count'] = $mockLeader;
+                     $dept['coworking_count'] = max(0, $total - $mockLeader);
+                 }
+            } else {
+                 $dept['avg_progress'] = 0;
+            }
+        }
+        return $departments;
     }
 }

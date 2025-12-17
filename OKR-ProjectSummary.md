@@ -109,6 +109,11 @@
     *   **Table View**: เปลี่ยนการแสดงผลประวัติการรางานจาก Timeline เป็น Table เพื่อความสม่ำเสมอของ UI (Consistency)
     *   **Detailed Columns**: เพิ่มคอลัมน์แสดงข้อมูลครบถ้วน (รอบรายงาน, ความก้าวหน้า, สถานะ, วันที่)
     *   **Action Menu**: รวมปุ่มดำเนินการไว้ใน Dropdown เมนูที่เป็นมาตรฐานเดียวกันกับหน้าอื่น
+9.  **Resolved Hybrid Mock Count Issue** (Critical Fix):
+    *   **Accurate Role Counting**: แก้ไข Logic ใน `DashboardModel` โดยใช้ **Correlated Subqueries** แทน Join ปกติ เพื่อแก้ปัญหา Leader Count เป็น 0
+    *   **Mock Data Simulation**: เพิ่ม Logic ใน `DashboardController` (`injectMockDepartments`) เพื่อจำลองจำนวน Leader/Co-Working โดยอัตโนมัติในกรณีที่ฐานข้อมูลจริงไม่มี Leader (เพื่อการ Demo ที่สมบูรณ์)
+    *   **Debug Tool**: สร้าง `debug_roles.php` แบบ Standalone เพื่อตรวจสอบค่า Role Binary และ Data Integrity โดยละเอียด
+
 
 
 -----

@@ -130,6 +130,44 @@ class DashboardModel extends Model
     }
 
     /**
+     * 2.1 ข้อมูลทุก Strategic Goals (รวมที่ไม่มี KR) สำหรับ Mockup
+     */
+    public function getAllStrategicGoalsProgress($year, $quarter = null)
+    {
+        $builder = $this->db->table('objective_groups og')
+            ->select('
+                og.id,
+                og.name,
+                COUNT(CASE WHEN kr.key_result_year = ' . $this->db->escape($year) . ' THEN kr.id END) as total_key_results,
+                AVG(CASE WHEN kr.key_result_year = ' . $this->db->escape($year) . ' AND krp.progress_percentage IS NOT NULL THEN krp.progress_percentage ELSE NULL END) as avg_progress,
+                SUM(CASE WHEN kr.key_result_year = ' . $this->db->escape($year) . ' AND krp.progress_percentage >= 80 THEN 1 ELSE 0 END) as on_track_count,
+                SUM(CASE WHEN kr.key_result_year = ' . $this->db->escape($year) . ' AND krp.progress_percentage >= 60 AND krp.progress_percentage < 80 THEN 1 ELSE 0 END) as at_risk_count,
+                SUM(CASE WHEN kr.key_result_year = ' . $this->db->escape($year) . ' AND krp.progress_percentage < 60 AND krp.progress_percentage > 0 THEN 1 ELSE 0 END) as behind_count
+            ')
+            ->join('objectives obj', 'og.id = obj.objective_group_id', 'left')
+            ->join('key_result_templates krt', 'obj.id = krt.objective_id', 'left')
+            ->join('key_results kr', 'krt.id = kr.key_result_template_id', 'left')
+            ->join('key_result_progress krp', 'kr.id = krp.key_result_id AND krp.status = "approved"', 'left');
+
+        if ($quarter) {
+            $builder->join('reporting_periods rp', 'krp.reporting_period_id = rp.id', 'left')
+                   ->where('(rp.quarter IS NULL OR rp.quarter = ' . $this->db->escape($quarter) . ')');
+        }
+
+        $builder->groupBy('og.id, og.name')
+               ->orderBy('og.id');
+
+        $result = $builder->get()->getResultArray();
+
+        // Post-processing for clean data
+        foreach ($result as &$row) {
+            $row['avg_progress'] = $row['avg_progress'] ?? 0;
+        }
+
+        return $result;
+    }
+
+    /**
      * 3. ข้อมูลตามหน่วยงาน (Department Performance)
      */
     public function getDepartmentProgress($year, $quarter = null, $options = [])
@@ -194,6 +232,76 @@ class DashboardModel extends Model
                 'total' => $total,
                 'total_pages' => ceil($total / $limit)
             ]
+        ];
+    }
+
+    /**
+     * 3.1 ข้อมูลทุกหน่วยงาน (รวมที่ไม่มี KR) สำหรับ Mockup
+     */
+    public function getAllDepartmentsProgress($year, $quarter = null, $options = [])
+    {
+        $page = $options['page'] ?? 1;
+        $limit = $options['limit'] ?? 1000;
+
+        $escapedYear = $this->db->escape($year);
+
+        // Subqueries ensures accurate counts independent of main join
+        $subQueryTotal = "(SELECT COUNT(DISTINCT kr.id)
+                           FROM key_result_departments krd
+                           JOIN key_results kr ON krd.key_result_id = kr.id
+                           WHERE krd.department_id = d.id
+                           AND kr.key_result_year = $escapedYear)";
+
+        $subQueryLeader = "(SELECT COUNT(DISTINCT kr.id)
+                            FROM key_result_departments krd
+                            JOIN key_results kr ON krd.key_result_id = kr.id
+                            WHERE krd.department_id = d.id
+                            AND krd.role = 'Leader'
+                            AND kr.key_result_year = $escapedYear)";
+
+        $subQueryCoWork = "(SELECT COUNT(DISTINCT kr.id)
+                            FROM key_result_departments krd
+                            JOIN key_results kr ON krd.key_result_id = kr.id
+                            WHERE krd.department_id = d.id
+                            AND krd.role = 'CoWorking'
+                            AND kr.key_result_year = $escapedYear)";
+
+        $builder = $this->db->table('departments d')
+            ->select("
+                d.id,
+                d.short_name,
+                d.name,
+                $subQueryTotal as total_key_results,
+                $subQueryLeader as leader_count,
+                $subQueryCoWork as coworking_count,
+                AVG(CASE WHEN kr.key_result_year = $escapedYear AND krp.progress_percentage IS NOT NULL THEN krp.progress_percentage ELSE NULL END) as avg_progress
+            ")
+            // Keep joins for Average Progress calculation
+            ->join('key_result_departments krd', 'd.id = krd.department_id', 'left')
+            ->join('key_results kr', 'krd.key_result_id = kr.id', 'left')
+            ->join('key_result_progress krp', 'kr.id = krp.key_result_id AND krp.status = "approved"', 'left');
+
+        if ($quarter) {
+             $builder->join('reporting_periods rp', 'krp.reporting_period_id = rp.id', 'left')
+                    ->where('(rp.quarter IS NULL OR rp.quarter = ' . $this->db->escape($quarter) . ')');
+        }
+
+        $builder->groupBy('d.id, d.short_name, d.name');
+
+        // Get results
+        $departments = $builder->get()->getResultArray();
+
+        // Post-processing for clean data
+        foreach ($departments as &$dept) {
+            $dept['avg_progress'] = $dept['avg_progress'] ?? 0;
+            // Cast to int as subqueries might return string
+            $dept['total_key_results'] = (int)$dept['total_key_results'];
+            $dept['leader_count'] = (int)$dept['leader_count'];
+            $dept['coworking_count'] = (int)$dept['coworking_count'];
+        }
+
+        return [
+            'departments' => $departments
         ];
     }
 
