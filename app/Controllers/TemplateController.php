@@ -92,6 +92,7 @@ class TemplateController extends BaseController
             'App\Controllers\StrategicController::index' => 'strategic-overview',
             'App\Controllers\StrategicController::overview' => 'strategic-overview',
             'App\Controllers\AdminController::managePermissions' => 'admin-permissions',
+            'App\Controllers\ProgressController::pendingApprovals' => 'keyresult-pending-approvals',
         ];
 
         if (isset($detailedMenuMapping[$currentRoute])) {

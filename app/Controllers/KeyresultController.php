@@ -26,9 +26,12 @@ class KeyresultController extends TemplateController
         $model = new KeyresultModel();
         $progressModel = new ProgressModel();
 
+        // รับค่าปีจาก Request (Default: 2568)
+        $selectedYear = $this->request->getGet('year') ?? '2568';
+
         $conditions = [
             'department_id' => session('department'),
-            'year' => '2568'
+            'year' => $selectedYear
         ];
 
         // ดึงข้อมูล Key Results ทั้งหมดของหน่วยงาน
@@ -112,6 +115,10 @@ class KeyresultController extends TemplateController
         $this->data['keyresults'] = $keyresults;
         $this->data['user_permissions'] = getDepartmentUserRoles();
         $this->data['pending_approvals_count'] = getPendingApprovalsCount();
+
+        // Data for Filter
+        $this->data['current_year'] = $selectedYear;
+        $this->data['years'] = ['2571', '2570', '2569', '2568'];
 
         // นับจำนวนสถิติต่างๆ
         $stats = [

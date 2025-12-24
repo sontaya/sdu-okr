@@ -113,6 +113,10 @@
     *   **Accurate Role Counting**: แก้ไข Logic ใน `DashboardModel` โดยใช้ **Correlated Subqueries** แทน Join ปกติ เพื่อแก้ปัญหา Leader Count เป็น 0
     *   **Mock Data Simulation**: เพิ่ม Logic ใน `DashboardController` (`injectMockDepartments`) เพื่อจำลองจำนวน Leader/Co-Working โดยอัตโนมัติในกรณีที่ฐานข้อมูลจริงไม่มี Leader (เพื่อการ Demo ที่สมบูรณ์)
     *   **Debug Tool**: สร้าง `debug_roles.php` แบบ Standalone เพื่อตรวจสอบค่า Role Binary และ Data Integrity โดยละเอียด
+10. **System Improvements & Fixes**:
+    *   **Selective Debug Panel**: ปรับปรุง Sidebar ให้แสดง Debug Panel เฉพาะใน Environment `development` เท่านั้น เพื่อความปลอดภัยและความสะอาดของหน้าจอใน Production
+    *   **Menu Highlighting Fixed**: แก้ไขปัญหาเมนู "รายงานรออนุมัติ" ไม่ Highlight เมื่อถูกเลือก (และเมนูแม่ไม่ Expand) โดยการปรับ `TemplateController` และ `sidebar_menu.php` ให้ใช้ Logic Active Key ที่ถูกต้อง (`keyresult-pending-approvals`)
+    *   **Fiscal Year Filter Added**: เพิ่มตัวกรองปีงบประมาณ (2568 - 2571) ในหน้า `My Key Results` ช่วยให้ผู้ใช้สามารถดูข้อมูลย้อนหลังหรือล่วงหน้าได้สะดวกขึ้น (Updates: `KeyresultController`, `unified-list.php`, `unified-list.js`)
 
 
 

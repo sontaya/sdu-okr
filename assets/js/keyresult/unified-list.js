@@ -1,5 +1,5 @@
 // ✅ แก้ไข Role และ Status filters - เก็บ filter states แทนการใช้ ext.search
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Global filter states
     let currentFilters = {
         role: '',
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Debug log (เฉพาะเมื่อมี filter)
         if (currentFilters.role || currentFilters.status) {
-            console.log(`🔍 Row ${dataIndex}: Role(${roleData}${roleMatch?'✓':'✗'}) Status(${statusData}${statusMatch?'✓':'✗'}) = ${finalResult}`);
+            console.log(`🔍 Row ${dataIndex}: Role(${roleData}${roleMatch ? '✓' : '✗'}) Status(${statusData}${statusMatch ? '✓' : '✗'}) = ${finalResult}`);
         }
 
         return finalResult;
@@ -63,8 +63,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // ลงทะเบียน master filter function ครั้งเดียว
     $.fn.dataTable.ext.search.push(applyCustomFilters);
 
+    // ✅ Year Filter - Reload page on change
+    $('[data-kt-keyresults-filter="year"]').on('change', function () {
+        const year = this.value;
+        if (year) {
+            window.location.href = `?year=${year}`;
+        }
+    });
+
     // ✅ Role Filter สำหรับ Select2
-    $('[data-kt-keyresults-filter="role"]').on('change', function() {
+    $('[data-kt-keyresults-filter="role"]').on('change', function () {
         const value = this.value;
         console.log('🔍 Role filter changed to:', value);
 
@@ -85,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ✅ Status Filter สำหรับ Select2
-    $('[data-kt-keyresults-filter="progress_status"]').on('change', function() {
+    $('[data-kt-keyresults-filter="progress_status"]').on('change', function () {
         const value = this.value;
         console.log('🔍 Status filter changed to:', value);
 
@@ -108,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Search functionality
     const searchInput = document.querySelector('[data-kt-keyresults-filter="search"]');
     if (searchInput) {
-        searchInput.addEventListener('keyup', function() {
+        searchInput.addEventListener('keyup', function () {
             table.search(this.value).draw();
         });
     }
@@ -165,39 +173,39 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({})
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log('📤 Submit response:', data);
+            .then(response => response.json())
+            .then(data => {
+                console.log('📤 Submit response:', data);
 
-            if (data.success) {
-                Swal.fire({
-                    title: 'สำเร็จ!',
-                    text: data.message || 'ส่งรายงานเพื่อขออนุมัติสำเร็จ',
-                    icon: 'success',
-                    confirmButtonText: 'ตกลง'
-                }).then(() => {
-                    // ✅ Reload หน้าเพื่ออัพเดทสถานะ
-                    location.reload();
-                });
-            } else {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: data.message || 'ส่งรายงานเพื่อขออนุมัติสำเร็จ',
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง'
+                    }).then(() => {
+                        // ✅ Reload หน้าเพื่ออัพเดทสถานะ
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'เกิดข้อผิดพลาด!',
+                        text: data.message || 'ไม่สามารถส่งรายงานได้',
+                        icon: 'error',
+                        confirmButtonText: 'ตกลง'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('❌ Submit error:', error);
+
                 Swal.fire({
                     title: 'เกิดข้อผิดพลาด!',
-                    text: data.message || 'ไม่สามารถส่งรายงานได้',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
                     icon: 'error',
                     confirmButtonText: 'ตกลง'
                 });
-            }
-        })
-        .catch(error => {
-            console.error('❌ Submit error:', error);
-
-            Swal.fire({
-                title: 'เกิดข้อผิดพลาด!',
-                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
-                icon: 'error',
-                confirmButtonText: 'ตกลง'
             });
-        });
     }
 
     // Approve Progress Function
@@ -227,38 +235,38 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({})
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log('✅ Approve response:', data);
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Approve response:', data);
 
-            if (data.success) {
-                Swal.fire({
-                    title: 'สำเร็จ!',
-                    text: data.message || 'อนุมัติรายงานสำเร็จ',
-                    icon: 'success',
-                    confirmButtonText: 'ตกลง'
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: data.message || 'อนุมัติรายงานสำเร็จ',
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'เกิดข้อผิดพลาด!',
+                        text: data.message || 'ไม่สามารถอนุมัติรายงานได้',
+                        icon: 'error',
+                        confirmButtonText: 'ตกลง'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('❌ Approve error:', error);
+
                 Swal.fire({
                     title: 'เกิดข้อผิดพลาด!',
-                    text: data.message || 'ไม่สามารถอนุมัติรายงานได้',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
                     icon: 'error',
                     confirmButtonText: 'ตกลง'
                 });
-            }
-        })
-        .catch(error => {
-            console.error('❌ Approve error:', error);
-
-            Swal.fire({
-                title: 'เกิดข้อผิดพลาด!',
-                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
-                icon: 'error',
-                confirmButtonText: 'ตกลง'
             });
-        });
     }
 
     // Reject Progress Function
@@ -290,38 +298,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 reject_reason: reason
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log('❌ Reject response:', data);
+            .then(response => response.json())
+            .then(data => {
+                console.log('❌ Reject response:', data);
 
-            if (data.success) {
-                Swal.fire({
-                    title: 'สำเร็จ!',
-                    text: data.message || 'ปฏิเสธรายงานสำเร็จ',
-                    icon: 'success',
-                    confirmButtonText: 'ตกลง'
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: data.message || 'ปฏิเสธรายงานสำเร็จ',
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'เกิดข้อผิดพลาด!',
+                        text: data.message || 'ไม่สามารถปฏิเสธรายงานได้',
+                        icon: 'error',
+                        confirmButtonText: 'ตกลง'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('❌ Reject error:', error);
+
                 Swal.fire({
                     title: 'เกิดข้อผิดพลาด!',
-                    text: data.message || 'ไม่สามารถปฏิเสธรายงานได้',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
                     icon: 'error',
                     confirmButtonText: 'ตกลง'
                 });
-            }
-        })
-        .catch(error => {
-            console.error('❌ Reject error:', error);
-
-            Swal.fire({
-                title: 'เกิดข้อผิดพลาด!',
-                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
-                icon: 'error',
-                confirmButtonText: 'ตกลง'
             });
-        });
     }
 
     // ✅ Export functions เผื่อต้องการใช้ที่อื่น
@@ -331,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.debugCurrentState = debugCurrentState;
 
     // Submit Report functionality
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.classList.contains('submit-report-btn')) {
             e.preventDefault();
             const progressId = e.target.dataset.progressId;
@@ -353,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Approve Report functionality
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.classList.contains('approve-report-btn')) {
             e.preventDefault();
             const progressId = e.target.dataset.progressId;
@@ -375,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Reject Report functionality
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (e.target.classList.contains('reject-report-btn')) {
             e.preventDefault();
             const progressId = e.target.dataset.progressId;
@@ -412,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Master checkbox functionality
     const masterCheckbox = document.querySelector('[data-kt-check="true"]');
     if (masterCheckbox) {
-        masterCheckbox.addEventListener('click', function() {
+        masterCheckbox.addEventListener('click', function () {
             const checkboxes = document.querySelectorAll('#kt_keyresults_table .form-check-input');
             checkboxes.forEach(checkbox => {
                 if (checkbox !== masterCheckbox) {

@@ -98,6 +98,14 @@
             </div>
         </div>
         <div class="card-toolbar flex-row-fluid justify-content-end gap-5">
+            <!-- Year Filter -->
+            <div class="w-150px">
+                <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="ปีงบประมาณ" data-kt-keyresults-filter="year">
+                    <?php foreach ($years as $year): ?>
+                        <option value="<?= $year ?>" <?= $current_year == $year ? 'selected' : '' ?>>ปี <?= $year ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <!-- Role Filter -->
             <div class="w-150px">
                 <select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="บทบาท" data-kt-keyresults-filter="role">

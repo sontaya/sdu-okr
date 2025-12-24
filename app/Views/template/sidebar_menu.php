@@ -22,6 +22,7 @@ if (!function_exists('isMenuActive')) {
 echo "<!-- Debug: activeMenu = '$activeMenu' -->";
 ?>
 
+        <?php if (getenv('CI_ENVIRONMENT') === 'development'): ?>
         <!--begin::Debug Panel - ข้อมูล Login & Permissions-->
         <div class="card bg-light-info mb-5 mx-3">
             <div class="card-body p-3">
@@ -95,6 +96,7 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
             </div>
         </div>
         <!--end::Debug Panel-->
+        <?php endif; ?>
 
         <!--begin::Sidebar menu-->
         <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary">
@@ -183,7 +185,7 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
                         <!--begin:Menu item Pending Approvals (เฉพาะ Approver/Admin)-->
                         <?php if (isset($current_user) && ($current_user['is_approver'] || $current_user['is_admin'])): ?>
                         <div class="menu-item">
-                            <a class="menu-link" href="<?= base_url('progress/pending-approvals') ?>">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'keyresult-pending-approvals') ? 'active' : '' ?>" href="<?= base_url('progress/pending-approvals') ?>">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
@@ -227,29 +229,6 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
                         </div>
                         <!--end:Menu item Overview-->
 
-                        <!--begin:Menu item Department Analysis (เฉพาะ Admin)-->
-                        <?php if (isset($current_user['is_admin']) && $current_user['is_admin']): ?>
-                        <div class="menu-item">
-                            <a class="menu-link <?= isMenuActive($activeMenu, 'strategic-departments') ? 'active' : '' ?>" href="<?= base_url('strategic/departments') ?>">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Department Analysis</span>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                        <!--end:Menu item Department Analysis-->
-
-                        <!--begin:Menu item Reports-->
-                        <div class="menu-item">
-                            <a class="menu-link <?= isMenuActive($activeMenu, 'strategic-reports') ? 'active' : '' ?>" href="<?= base_url('strategic/reports') ?>">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Strategic Reports</span>
-                            </a>
-                        </div>
-                        <!--end:Menu item Reports-->
                     </div>
                     <!--end:Menu sub-->
                 </div>

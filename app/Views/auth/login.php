@@ -48,13 +48,13 @@
 								<!--begin::Input group=-->
 								<div class="fv-row mb-8">
 									<!--begin::LoginName-->
-									<input type="text" placeholder="ชื่อผู้ใช้" name="login_user" autocomplete="off" class="form-control bg-transparent" value="sontaya_yam" />
+									<input type="text" placeholder="ชื่อผู้ใช้" name="login_user" autocomplete="off" class="form-control bg-transparent" value="" />
 									<!--end::LoginName-->
 								</div>
 								<!--end::Input group=-->
 								<div class="fv-row mb-3">
 									<!--begin::Password-->
-									<input type="password" placeholder="รหัสผ่าน" name="login_password" autocomplete="off" class="form-control bg-transparent" value="admin@sdu" />
+									<input type="password" placeholder="รหัสผ่าน" name="login_password" autocomplete="off" class="form-control bg-transparent" value="" />
 									<!--end::Password-->
 								</div>
 								<!--end::Input group=-->

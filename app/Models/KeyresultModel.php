@@ -54,7 +54,8 @@ class KeyresultModel extends Model
             ->join('objectives obj', 'og.id = obj.objective_group_id')
             ->join('key_result_templates kt', 'kt.objective_id = obj.id')
             ->join('key_results kr', 'kr.key_result_template_id = kt.id')
-            ->join('key_result_departments kd', 'kr.id = kd.key_result_id');
+            ->join('key_result_departments kd', 'kr.id = kd.key_result_id')
+            ->where('kr.record_status', 'Y');
 
         // เงื่อนไข dynamic
         if (!empty($params['conditions']['key_result_id'])) {
@@ -195,7 +196,9 @@ class KeyresultModel extends Model
             ->join('key_results kr', 'kr.key_result_template_id = kt.id')
             ->join("({$latestProgressSubquery}) lp", 'lp.key_result_id = kr.id AND lp.rn = 1', 'left')
             ->join('reporting_periods rp', 'lp.reporting_period_id = rp.id', 'left')
-            ->join('users u', 'lp.created_by = u.id', 'left');
+
+            ->join('users u', 'lp.created_by = u.id', 'left')
+            ->where('kr.record_status', 'Y');
 
         // Apply basic filters
         if (!empty($filters['year'])) {

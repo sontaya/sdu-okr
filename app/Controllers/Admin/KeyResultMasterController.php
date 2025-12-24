@@ -41,7 +41,7 @@ class KeyResultMasterController extends TemplateController
 
         // Filter Options
         $this->data['filter_options'] = [
-            'years' => ['2569', '2568'],
+            'years' => ['2571','2570','2569','2568'],
             'objective_groups' => $this->db->table('objective_groups')->select('id, name')->orderBy('id')->get()->getResultArray()
         ];
         $this->data['current_filters'] = $filters;
@@ -108,7 +108,7 @@ class KeyResultMasterController extends TemplateController
         $this->data['title'] = $id ? 'แก้ไข Key Result' : 'สร้าง Key Result ใหม่';
 
         // Get Dropdown Data
-        $this->data['years'] = ['2569', '2568'];
+        $this->data['years'] = ['2571','2570','2569','2568'];
 
         // Fetch All Departments
         $this->data['departments'] = $this->db->table('departments')
@@ -257,10 +257,12 @@ class KeyResultMasterController extends TemplateController
         try {
             if ($id) {
                 // Update
+                $data['updated_by'] = session('user_id');
                 $builder->where('id', $id)->update($data);
                 $message = 'แก้ไขข้อมูลสำเร็จ';
             } else {
                 // Insert
+                $data['created_by'] = session('user_id');
                 $builder->insert($data);
                 $id = $db->insertID();
                 $message = 'เพิ่มข้อมูลสำเร็จ';
