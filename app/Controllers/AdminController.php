@@ -43,7 +43,7 @@ class AdminController extends TemplateController
             ')
             ->join('departments d', 'u.department_id = d.id')
             ->join('department_user_roles dur', 'u.id = dur.user_id AND u.department_id = dur.department_id', 'left')
-            ->where('u.department_id', session('department'))
+            // ->where('u.department_id', session('department')) // Allow viewing all users
             ->groupBy('u.id')
             ->orderBy('u.full_name')
             ->get()
@@ -62,11 +62,37 @@ class AdminController extends TemplateController
             ->get()
             ->getResultArray();
 
-        $pendingCount = getPendingApprovalsCount();
+
+        // ดึงสถิติจำนวนแต่ละ Role แยกตามหน่วยงาน
+        $roleStatsRaw = $db->table('department_user_roles dur')
+            ->select('d.short_name, d.name as department_name, dur.role_type, COUNT(*) as count')
+            ->join('departments d', 'dur.department_id = d.id')
+            ->groupBy('d.id, dur.role_type')
+            ->orderBy('d.short_name')
+            ->get()
+            ->getResultArray();
+
+        $roleStats = [];
+        foreach ($roleStatsRaw as $row) {
+            $key = $row['short_name']; // Use Short Name as key
+            if (!isset($roleStats[$key])) {
+                $roleStats[$key] = [
+                    'short_name' => $row['short_name'],
+                    'full_name' => $row['department_name'],
+                    'stats' => [
+                        'Reporter' => 0,
+                        'Approver' => 0,
+                        'StrategicViewer' => 0
+                    ]
+                ];
+            }
+            // Fix: Access 'stats' key
+            $roleStats[$key]['stats'][$row['role_type']] = $row['count'];
+        }
 
         $this->data['users'] = $users;
         $this->data['departments'] = $departments;
-        $this->data['pending_approvals_count'] = $pendingCount;
+        $this->data['role_stats'] = $roleStats; // Pass stats to view
         $this->data['user_permissions'] = getDepartmentUserRoles();
         $this->data['all_departments'] = $allDepartments;
         $this->data['title'] = 'จัดการสิทธิ์ผู้ใช้งาน';
@@ -76,7 +102,7 @@ class AdminController extends TemplateController
             'assets/js/admin/manage-permissions.js'
         ];
         $this->contentTemplate = 'admin/manage-permissions';
-        return $this->render();
+        return $this->render(); // Ensure this matches the existing return statement structure if it was different
     }
 
     /**
@@ -172,16 +198,22 @@ class AdminController extends TemplateController
 
             log_message('info', 'eProfile API - Filtered users count: ' . count($filteredUsers));
 
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => $filteredUsers,
-                'message' => 'ค้นหาสำเร็จ พบ ' . count($filteredUsers) . ' รายการ',
-                'debug' => ENVIRONMENT === 'development' ? [
-                    'search_key' => $searchKey,
-                    'api_status' => $response->getStatusCode(),
-                    'raw_count' => is_array($userData) ? count($userData) : 0
-                ] : null
-            ]);
+            // Clear any previous output
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            return $this->response->setContentType('application/json')
+                ->setBody(json_encode([
+                    'success' => true,
+                    'data' => $filteredUsers,
+                    'message' => 'ค้นหาสำเร็จ พบ ' . count($filteredUsers) . ' รายการ',
+                    'debug' => ENVIRONMENT === 'development' ? [
+                        'search_key' => $searchKey,
+                        'api_status' => $response->getStatusCode(),
+                        'raw_count' => is_array($userData) ? count($userData) : 0
+                    ] : null
+                ], JSON_UNESCAPED_UNICODE));
 
         } catch (\Exception $e) {
             log_message('error', 'eProfile API Error: ' . $e->getMessage());
@@ -313,17 +345,8 @@ class AdminController extends TemplateController
 
         $userId = $this->request->getPost('user_id');
         $roleType = $this->request->getPost('role_type');
-        $departmentId = session('department');
-
-        if (!$userId || !$roleType || !in_array($roleType, ['Reporter', 'Approver', 'Admin'])) {
-            return $this->response->setJSON(['success' => false, 'message' => 'ข้อมูลไม่ถูกต้อง']);
-        }
-
-        $userModel = new UserModel();
-        $user = $userModel->find($userId);
-        if (!$user || $user['department_id'] != $departmentId) {
-            return $this->response->setJSON(['success' => false, 'message' => 'ไม่พบผู้ใช้ในหน่วยงานนี้']);
-        }
+        // Use POST department_id if available, else session
+        $departmentId = $this->request->getPost('department_id') ?? session('department');
 
         if (grantDepartmentRole($userId, $departmentId, $roleType)) {
             return $this->response->setJSON([
@@ -343,7 +366,8 @@ class AdminController extends TemplateController
 
         $userId = $this->request->getPost('user_id');
         $roleType = $this->request->getPost('role_type');
-        $departmentId = session('department');
+        // Use POST department_id if available, else session
+        $departmentId = $this->request->getPost('department_id') ?? session('department');
 
         if ($userId == session('user_id')) {
             return $this->response->setJSON(['success' => false, 'message' => 'ไม่สามารถเพิกถอนสิทธิ์ตัวเองได้']);

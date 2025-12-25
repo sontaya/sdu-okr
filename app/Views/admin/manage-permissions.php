@@ -2,59 +2,66 @@
 
 <div class="row g-6 g-xl-9">
     <!-- Summary Cards -->
-    <div class="col-md-6 col-xl-4">
-        <div class="card bg-light-primary">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="symbol symbol-40px me-5">
-                        <span class="symbol-label bg-primary">
-                            <i class="ki-outline ki-people fs-1 text-white"></i>
-                        </span>
-                    </div>
-                    <div>
-                        <div class="fs-1 fw-bold text-primary"><?= count($users) ?></div>
-                        <div class="fs-7 text-muted">ผู้ใช้ทั้งหมด</div>
-                    </div>
-                </div>
+    <div class="col-md-2 col-xl-2">
+        <div class="card bg-light-primary h-100">
+            <div class="card-body d-flex flex-column justify-content-center text-center p-2">
+                <i class="ki-outline ki-people fs-2x text-primary mb-2"></i>
+                <div class="fs-2 fw-bold text-primary"><?= count($users) ?></div>
+                <div class="fs-8 text-muted">ผู้ใช้ทั้งหมด</div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6 col-xl-4">
-        <div class="card bg-light-warning">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="symbol symbol-40px me-5">
-                        <span class="symbol-label bg-warning">
-                            <i class="ki-outline ki-notification-status fs-1 text-white"></i>
-                        </span>
-                    </div>
-                    <div>
-                        <div class="fs-1 fw-bold text-warning"><?= $pending_approvals_count ?></div>
-                        <div class="fs-7 text-muted">รออนุมัติ</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Role Stats Grid -->
+    <div class="col-md-10 col-xl-10">
+        <div class="row g-2 mb-6">
+            <?php foreach ($role_stats as $deptData):
+                $stats = $deptData['stats'];
+            ?>
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 border border-secondary border-dashed">
+                    <div class="card-body p-2 d-flex flex-column justify-content-center">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <div class="fw-bold fs-6 text-gray-800 me-2 text-truncate" title="<?= esc($deptData['short_name']) ?>"><?= esc($deptData['short_name']) ?></div>
+                            <div class="d-flex gap-1">
+                                <?php if ($stats['Reporter'] > 0): ?>
+                                <div class="symbol symbol-20px symbol-circle" data-bs-toggle="tooltip" title="ผู้รายงาน (Reporter)">
+                                    <span class="symbol-label bg-light-primary text-primary fw-bold fs-9"><?= $stats['Reporter'] ?></span>
+                                </div>
+                                <?php endif; ?>
 
-    <div class="col-md-6 col-xl-4">
-        <div class="card bg-light-success">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="symbol symbol-40px me-5">
-                        <span class="symbol-label bg-success">
-                            <i class="ki-outline ki-shield-tick fs-1 text-white"></i>
-                        </span>
-                    </div>
-                    <div>
-                        <div class="fs-1 fw-bold text-success">
-                            <?= count(array_filter($users, function($user) { return !empty($user['current_roles']); })) ?>
+                                <?php if ($stats['Approver'] > 0): ?>
+                                <div class="symbol symbol-20px symbol-circle" data-bs-toggle="tooltip" title="ผู้อนุมัติ (Approver)">
+                                    <span class="symbol-label bg-light-warning text-warning fw-bold fs-9"><?= $stats['Approver'] ?></span>
+                                </div>
+                                <?php endif; ?>
+
+                                <?php if ($stats['StrategicViewer'] > 0): ?>
+                                <div class="symbol symbol-20px symbol-circle" data-bs-toggle="tooltip" title="ผู้ดูเชิงยุทธศาสตร์ (Strategic Viewer)">
+                                    <span class="symbol-label bg-light-info text-info fw-bold fs-9"><?= $stats['StrategicViewer'] ?></span>
+                                </div>
+                                <?php endif; ?>
+
+                                <?php if ($stats['Reporter'] == 0 && $stats['Approver'] == 0 && $stats['StrategicViewer'] == 0): ?>
+                                <span class="text-muted fs-9">-</span>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <div class="fs-7 text-muted">มีสิทธิ์</div>
+                        <div class="text-muted fs-9 text-truncate" title="<?= esc($deptData['full_name']) ?>"><?= esc($deptData['full_name']) ?></div>
                     </div>
                 </div>
             </div>
+            <?php endforeach; ?>
+
+            <?php if (empty($role_stats)): ?>
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body text-center text-muted">
+                        ไม่มีข้อมูลสิทธิ์ในขณะนี้
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -71,7 +78,7 @@
             </div>
             <!-- Department Filter -->
             <div class="d-flex align-items-center ms-3">
-                <select id="department-filter" class="form-select form-select-solid w-200px">
+                <select id="department-filter" class="form-select form-select-solid w-400px">
                     <option value="">ทุกหน่วยงาน</option>
                     <?php foreach ($all_departments as $dept): ?>
                         <option value="<?= $dept['id'] ?>" <?= $dept['id'] == session('department') ? 'selected' : '' ?>>
@@ -134,10 +141,11 @@
                                 ?>
                                     <span class="badge <?= $badgeClass ?> me-1 role-badge" data-role="<?= $role ?>">
                                         <?= getUserRoleNames($role) ?>
-                                        <?php if ($user['id'] != session('user_id')): ?>
+                                        <?php if ($user['id'] != session('user_id') && $role !== 'Admin'): ?>
                                         <i class="ki-outline ki-cross fs-7 ms-1 text-hover-danger cursor-pointer remove-role"
                                            data-user-id="<?= $user['id'] ?>"
                                            data-role="<?= $role ?>"
+                                           data-department-id="<?= $user['department_id'] ?>"
                                            title="เพิกถอนสิทธิ์"></i>
                                         <?php endif; ?>
                                     </span>
@@ -165,25 +173,19 @@
                                 <div class="menu-item px-3">
                                     <button class="menu-link px-3 grant-role-btn"
                                             data-user-id="<?= $user['id'] ?>"
+                                            data-department-id="<?= $user['department_id'] ?>"
                                             data-role="Reporter">
-                                        <i class="ki-outline ki-plus fs-6 me-2"></i>
+                                        <i class="ki-outline ki-document fs-6 me-2"></i>
                                         เพิ่มสิทธิ์ผู้รายงาน
                                     </button>
                                 </div>
                                 <div class="menu-item px-3">
                                     <button class="menu-link px-3 grant-role-btn"
                                             data-user-id="<?= $user['id'] ?>"
+                                            data-department-id="<?= $user['department_id'] ?>"
                                             data-role="Approver">
-                                        <i class="ki-outline ki-shield-tick fs-6 me-2"></i>
+                                        <i class="ki-outline ki-check-circle fs-6 me-2"></i>
                                         เพิ่มสิทธิ์ผู้อนุมัติ
-                                    </button>
-                                </div>
-                                <div class="menu-item px-3">
-                                    <button class="menu-link px-3 grant-role-btn"
-                                            data-user-id="<?= $user['id'] ?>"
-                                            data-role="Admin">
-                                        <i class="ki-outline ki-crown fs-6 me-2"></i>
-                                        เพิ่มสิทธิ์ผู้ดูแลระบบ
                                     </button>
                                 </div>
                                 <div class="separator my-2"></div>
@@ -305,12 +307,6 @@
                                     <strong>ผู้อนุมัติ</strong> - สามารถอนุมัติรายงาน + สิทธิ์ผู้รายงาน
                                 </label>
                             </div>
-                            <div class="form-check form-check-custom form-check-solid">
-                                <input class="form-check-input" type="checkbox" name="roles[]" value="Admin" id="role_admin" />
-                                <label class="form-check-label" for="role_admin">
-                                    <strong>ผู้ดูแลระบบ</strong> - จัดการผู้ใช้ + สิทธิ์ทั้งหมด
-                                </label>
-                            </div>
                             <div class="form-text mt-2">สามารถเลือกได้หลายสิทธิ์ หรือไม่เลือกเลยก็ได้ (เพิ่มทีหลังได้)</div>
                         </div>
 
@@ -403,12 +399,6 @@
                             <input class="form-check-input" type="checkbox" name="roles[]" value="Approver" id="edit_role_approver" />
                             <label class="form-check-label" for="edit_role_approver">
                                 <strong>ผู้อนุมัติ</strong> - สามารถอนุมัติรายงาน + สิทธิ์ผู้รายงาน
-                            </label>
-                        </div>
-                        <div class="form-check form-check-custom form-check-solid">
-                            <input class="form-check-input" type="checkbox" name="roles[]" value="Admin" id="edit_role_admin" />
-                            <label class="form-check-label" for="edit_role_admin">
-                                <strong>ผู้ดูแลระบบ</strong> - จัดการผู้ใช้ + สิทธิ์ทั้งหมด
                             </label>
                         </div>
                     </div>

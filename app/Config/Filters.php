@@ -57,7 +57,7 @@ class Filters extends BaseFilters
         'after' => [
             'pagecache',   // Web Page Caching
             'performance', // Performance Metrics
-            'toolbar',     // Debug Toolbar
+            // 'toolbar',     // Moved to globals to allow exceptions
         ],
     ];
 
@@ -74,6 +74,13 @@ class Filters extends BaseFilters
             // 'invalidchars',
         ],
         'after' => [
+            'toolbar' => [
+                'except' => [
+                    'admin/search-eprofile-users',
+                    'admin/add-user-from-eprofile',
+                    'admin/get-eprofile-users', // variation just in case
+                ]
+            ],
             // 'honeypot',
             // 'secureheaders',
         ],

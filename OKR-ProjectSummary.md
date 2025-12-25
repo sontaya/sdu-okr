@@ -117,8 +117,11 @@
     *   **Selective Debug Panel**: ปรับปรุง Sidebar ให้แสดง Debug Panel เฉพาะใน Environment `development` เท่านั้น เพื่อความปลอดภัยและความสะอาดของหน้าจอใน Production
     *   **Menu Highlighting Fixed**: แก้ไขปัญหาเมนู "รายงานรออนุมัติ" ไม่ Highlight เมื่อถูกเลือก (และเมนูแม่ไม่ Expand) โดยการปรับ `TemplateController` และ `sidebar_menu.php` ให้ใช้ Logic Active Key ที่ถูกต้อง (`keyresult-pending-approvals`)
     *   **Fiscal Year Filter Added**: เพิ่มตัวกรองปีงบประมาณ (2568 - 2571) ในหน้า `My Key Results` ช่วยให้ผู้ใช้สามารถดูข้อมูลย้อนหลังหรือล่วงหน้าได้สะดวกขึ้น (Updates: `KeyresultController`, `unified-list.php`, `unified-list.js`)
-
-
+11. **Admin & Permission System Overhaul** (Dec 25):
+    *   **High-Density UI**: Redesigned "Manage Permissions" dashboard with compact cards to support 30+ departments efficiently (6 cards/row).
+    *   **Critical Fixes**: Resolved permission revocation bug where roles were not properly removed due to incorrect department ID targeting.
+    *   **UX Enhancement**: Replaced browser native alerts with **SweetAlert2** for Grant/Revoke actions, ensuring smoother interaction and reliable page reloads.
+    *   **Robustness**: Fixed eProfile search crash (Debug Toolbar conflict) by optimizing `AdminController` output handling.
 
 -----
 

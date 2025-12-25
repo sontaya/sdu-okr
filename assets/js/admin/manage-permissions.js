@@ -1,6 +1,6 @@
 // Enhanced manage-permissions.js with eProfile API integration
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeEventHandlers();
     initializeEprofileModal();
 });
@@ -8,42 +8,84 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeEventHandlers() {
     // Grant Role
     document.querySelectorAll('.grant-role-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const userId = this.dataset.userId;
             const role = this.dataset.role;
+            const departmentId = this.dataset.departmentId;
 
-            if (confirm(`คุณต้องการเพิ่มสิทธิ์ "${getUserRoleNames(role)}" ให้ผู้ใช้นี้ใช่หรือไม่?`)) {
-                grantRole(userId, role);
-            }
+            Swal.fire({
+                title: 'ยืนยันการเพิ่มสิทธิ์',
+                text: `คุณต้องการเพิ่มสิทธิ์ "${getUserRoleNames(role)}" ให้ผู้ใช้นี้ใช่หรือไม่?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-light'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    grantRole(userId, role, departmentId);
+                }
+            });
         });
     });
 
     // Remove Role
     document.querySelectorAll('.remove-role').forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        btn.addEventListener('click', function (e) {
             e.stopPropagation();
             const userId = this.dataset.userId;
             const role = this.dataset.role;
+            const departmentId = this.dataset.departmentId;
 
-            if (confirm(`คุณต้องการเพิกถอนสิทธิ์ "${getUserRoleNames(role)}" จากผู้ใช้นี้ใช่หรือไม่?`)) {
-                revokeRole(userId, role);
-            }
+            Swal.fire({
+                title: 'ยืนยันการเพิกถอนสิทธิ์',
+                text: `คุณต้องการเพิกถอนสิทธิ์ "${getUserRoleNames(role)}" จากผู้ใช้นี้ใช่หรือไม่?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                customClass: {
+                    confirmButton: 'btn btn-danger',
+                    cancelButton: 'btn btn-light'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    revokeRole(userId, role, departmentId);
+                }
+            });
         });
     });
 
     // Revoke All Roles
     document.querySelectorAll('.revoke-all-roles-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const userId = this.dataset.userId;
+            const departmentId = this.dataset.departmentId;
 
-            if (confirm('คุณต้องการเพิกถอนสิทธิ์ทั้งหมดจากผู้ใช้นี้ใช่หรือไม่?')) {
-                revokeAllRoles(userId);
-            }
+            Swal.fire({
+                title: 'ยืนยันการเพิกถอนสิทธิ์ทั้งหมด',
+                text: 'คุณต้องการเพิกถอนสิทธิ์ทั้งหมดจากผู้ใช้นี้ใช่หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                customClass: {
+                    confirmButton: 'btn btn-danger',
+                    cancelButton: 'btn btn-light'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    revokeAllRoles(userId, departmentId);
+                }
+            });
         });
     });
 
     document.querySelectorAll('.edit-user-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const userId = this.dataset.userId;
             openEditUserModal(userId);
         });
@@ -52,7 +94,7 @@ function initializeEventHandlers() {
     // Department Filter
     const departmentFilter = document.getElementById('department-filter');
     if (departmentFilter) {
-        departmentFilter.addEventListener('change', function() {
+        departmentFilter.addEventListener('change', function () {
             filterTable();
         });
     }
@@ -60,7 +102,7 @@ function initializeEventHandlers() {
     // Search functionality
     const searchInput = document.querySelector('[data-kt-user-table-filter="search"]');
     if (searchInput) {
-        searchInput.addEventListener('keyup', function() {
+        searchInput.addEventListener('keyup', function () {
             filterTable();
         });
     }
@@ -123,7 +165,7 @@ function initializeEprofileModal() {
 
     const editUserForm = document.getElementById('kt_modal_edit_user_form');
     if (editUserForm) {
-        editUserForm.addEventListener('submit', function(e) {
+        editUserForm.addEventListener('submit', function (e) {
             e.preventDefault();
             submitEditUser();
         });
@@ -131,12 +173,12 @@ function initializeEprofileModal() {
 
 
     // Reset modal when opened
-    modal.addEventListener('show.bs.modal', function() {
+    modal.addEventListener('show.bs.modal', function () {
         resetModal();
     });
 
     // Search button click
-    searchBtn.addEventListener('click', function() {
+    searchBtn.addEventListener('click', function () {
         const searchKey = searchInput.value.trim();
         if (searchKey.length < 2) {
             showAlert('warning', 'กรุณาใส่คำค้นหาอย่างน้อย 2 ตัวอักษร');
@@ -146,19 +188,19 @@ function initializeEprofileModal() {
     });
 
     // Search on Enter key
-    searchInput.addEventListener('keypress', function(e) {
+    searchInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             searchBtn.click();
         }
     });
 
     // Back to search
-    backBtn.addEventListener('click', function() {
+    backBtn.addEventListener('click', function () {
         showSearchStep();
     });
 
     // Form submission
-    addUserForm.addEventListener('submit', function(e) {
+    addUserForm.addEventListener('submit', function (e) {
         e.preventDefault();
         submitAddUser();
     });
@@ -171,20 +213,20 @@ function openEditUserModal(userId) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            populateEditModal(data.user, data.current_roles);
-            const modal = new bootstrap.Modal(document.getElementById('kt_modal_edit_user'));
-            modal.show();
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        showAlert('error', 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
-        console.error('Edit user error:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateEditModal(data.user, data.current_roles);
+                const modal = new bootstrap.Modal(document.getElementById('kt_modal_edit_user'));
+                modal.show();
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+            console.error('Edit user error:', error);
+        });
 }
 
 function populateEditModal(user, currentRoles) {
@@ -198,7 +240,8 @@ function populateEditModal(user, currentRoles) {
     // ตั้งค่าสิทธิ์
     document.getElementById('edit_role_reporter').checked = currentRoles.includes('Reporter');
     document.getElementById('edit_role_approver').checked = currentRoles.includes('Approver');
-    document.getElementById('edit_role_admin').checked = currentRoles.includes('Admin');
+    document.getElementById('edit_role_approver').checked = currentRoles.includes('Approver');
+    // document.getElementById('edit_role_admin').checked = currentRoles.includes('Admin'); // Removed from UI
 
     // เก็บ user ID
     document.getElementById('edit-user-id').value = user.id;
@@ -223,32 +266,32 @@ function submitEditUser() {
         },
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        // Reset button state
-        updateBtn.querySelector('.indicator-label').style.display = 'inline-flex';
-        updateBtn.querySelector('.indicator-progress').style.display = 'none';
-        updateBtn.disabled = false;
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            updateBtn.querySelector('.indicator-label').style.display = 'inline-flex';
+            updateBtn.querySelector('.indicator-progress').style.display = 'none';
+            updateBtn.disabled = false;
 
-        if (data.success) {
-            showAlert('success', data.message);
-            // Close modal and refresh page
-            const modal = bootstrap.Modal.getInstance(document.getElementById('kt_modal_edit_user'));
-            modal.hide();
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        // Reset button state
-        updateBtn.querySelector('.indicator-label').style.display = 'inline-flex';
-        updateBtn.querySelector('.indicator-progress').style.display = 'none';
-        updateBtn.disabled = false;
+            if (data.success) {
+                showAlert('success', data.message);
+                // Close modal and refresh page
+                const modal = bootstrap.Modal.getInstance(document.getElementById('kt_modal_edit_user'));
+                modal.hide();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            // Reset button state
+            updateBtn.querySelector('.indicator-label').style.display = 'inline-flex';
+            updateBtn.querySelector('.indicator-progress').style.display = 'none';
+            updateBtn.disabled = false;
 
-        showAlert('error', 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
-        console.error('Update user error:', error);
-    });
+            showAlert('error', 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+            console.error('Update user error:', error);
+        });
 }
 
 function resetModal() {
@@ -292,22 +335,22 @@ function searchEprofileUsers(searchKey) {
         },
         body: `search_key=${encodeURIComponent(searchKey)}`
     })
-    .then(response => response.json())
-    .then(data => {
-        loadingDiv.style.display = 'none';
+        .then(response => response.json())
+        .then(data => {
+            loadingDiv.style.display = 'none';
 
-        if (data.success) {
-            displaySearchResults(data.data);
-            console.log(data.data); // Debug log
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        loadingDiv.style.display = 'none';
-        showAlert('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
-        console.error('Search error:', error);
-    });
+            if (data.success) {
+                displaySearchResults(data.data);
+                console.log(data.data); // Debug log
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            loadingDiv.style.display = 'none';
+            showAlert('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            console.error('Search error:', error);
+        });
 }
 
 function displaySearchResults(users) {
@@ -365,9 +408,9 @@ function displaySearchResults(users) {
                             </div>
                             <div class="ms-3">
                                 ${isExisting ?
-                                    '<span class="badge badge-warning">มีในระบบแล้ว</span>' :
-                                    '<button type="button" class="btn btn-primary btn-sm select-user-btn" data-user=\'' + JSON.stringify(user) + '\'>เลือกผู้ใช้นี้</button>'
-                                }
+                    '<span class="badge badge-warning">มีในระบบแล้ว</span>' :
+                    '<button type="button" class="btn btn-primary btn-sm select-user-btn" data-user=\'' + JSON.stringify(user) + '\'>เลือกผู้ใช้นี้</button>'
+                }
                             </div>
                         </div>
                     </div>
@@ -378,7 +421,7 @@ function displaySearchResults(users) {
 
         // Bind select user events
         document.querySelectorAll('.select-user-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 const userData = JSON.parse(this.getAttribute('data-user'));
                 showUserDetailsStep(userData);
             });
@@ -413,88 +456,114 @@ function submitAddUser() {
         },
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        // Reset button state
-        addBtn.querySelector('.indicator-label').style.display = 'inline-flex';
-        addBtn.querySelector('.indicator-progress').style.display = 'none';
-        addBtn.disabled = false;
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            addBtn.querySelector('.indicator-label').style.display = 'inline-flex';
+            addBtn.querySelector('.indicator-progress').style.display = 'none';
+            addBtn.disabled = false;
 
-        if (data.success) {
-            showAlert('success', data.message);
-            // Close modal and refresh page
-            const modal = bootstrap.Modal.getInstance(document.getElementById('kt_modal_add_user'));
-            modal.hide();
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        // Reset button state
-        addBtn.querySelector('.indicator-label').style.display = 'inline-flex';
-        addBtn.querySelector('.indicator-progress').style.display = 'none';
-        addBtn.disabled = false;
+            if (data.success) {
+                showAlert('success', data.message);
+                // Close modal and refresh page
+                const modal = bootstrap.Modal.getInstance(document.getElementById('kt_modal_add_user'));
+                modal.hide();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            // Reset button state
+            addBtn.querySelector('.indicator-label').style.display = 'inline-flex';
+            addBtn.querySelector('.indicator-progress').style.display = 'none';
+            addBtn.disabled = false;
 
-        showAlert('error', 'เกิดข้อผิดพลาดในการเพิ่มผู้ใช้');
-        console.error('Add user error:', error);
-    });
+            showAlert('error', 'เกิดข้อผิดพลาดในการเพิ่มผู้ใช้');
+            console.error('Add user error:', error);
+        });
 }
 
-// Existing functions remain the same
-function grantRole(userId, role) {
+function grantRole(userId, role, departmentId) {
+    let body = `user_id=${userId}&role_type=${role}`;
+    if (departmentId) body += `&department_id=${departmentId}`;
+
     fetch(BASE_URL + 'admin/grant-role', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: `user_id=${userId}&role_type=${role}`
+        body: body
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', data.message);
-            location.reload();
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        showAlert('error', 'เกิดข้อผิดพลาด');
-        console.error('Error:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'สำเร็จ!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง',
+                    customClass: {
+                        confirmButton: 'btn btn-success'
+                    }
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'เกิดข้อผิดพลาด');
+            console.error('Error:', error);
+        });
 }
 
-function revokeRole(userId, role) {
+function revokeRole(userId, role, departmentId) {
+    let body = `user_id=${userId}&role_type=${role}`;
+    if (departmentId) body += `&department_id=${departmentId}`;
+
     fetch(BASE_URL + 'admin/revoke-role', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: `user_id=${userId}&role_type=${role}`
+        body: body
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', data.message);
-            location.reload();
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        showAlert('error', 'เกิดข้อผิดพลาด');
-        console.error('Error:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'สำเร็จ!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง',
+                    customClass: {
+                        confirmButton: 'btn btn-success'
+                    }
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('error', 'เกิดข้อผิดพลาด');
+            console.error('Error:', error);
+        });
 }
 
-function revokeAllRoles(userId) {
+function revokeAllRoles(userId, departmentId) {
     const roles = ['Reporter', 'Approver', 'Admin'];
     let promises = [];
 
     roles.forEach(role => {
+        let body = `user_id=${userId}&role_type=${role}`;
+        if (departmentId) body += `&department_id=${departmentId}`;
+
         promises.push(
             fetch(BASE_URL + 'admin/revoke-role', {
                 method: 'POST',
@@ -502,14 +571,23 @@ function revokeAllRoles(userId) {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: `user_id=${userId}&role_type=${role}`
+                body: body
             })
         );
     });
 
     Promise.all(promises).then(() => {
-        showAlert('success', 'เพิกถอนสิทธิ์ทั้งหมดสำเร็จ');
-        location.reload();
+        Swal.fire({
+            title: 'สำเร็จ!',
+            text: 'เพิกถอนสิทธิ์ทั้งหมดสำเร็จ',
+            icon: 'success',
+            confirmButtonText: 'ตกลง',
+            customClass: {
+                confirmButton: 'btn btn-success'
+            }
+        }).then(() => {
+            location.reload();
+        });
     });
 }
 
@@ -528,7 +606,10 @@ function showAlert(type, message) {
             title: type === 'success' ? 'สำเร็จ!' : (type === 'warning' ? 'คำเตือน!' : 'ข้อผิดพลาด!'),
             text: message,
             icon: type,
-            confirmButtonText: 'ตกลง'
+            confirmButtonText: 'ตกลง',
+            customClass: {
+                confirmButton: 'btn btn-primary'
+            }
         });
     } else {
         alert(message);
