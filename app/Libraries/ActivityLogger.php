@@ -33,7 +33,7 @@ class ActivityLogger
         $request = service('request');
 
         $data = [
-            'user_id'    => $userId ?? 0, // 0 for guest/system or unknown
+            'user_id'    => $userId, // Allow null for guest/fail
             'action'     => $action,
             'description'=> $description,
             'module'     => $module,

@@ -33,7 +33,7 @@
 						<!--begin::Wrapper-->
 						<div class="w-lg-500px p-10">
 							<!--begin::Form-->
-							<form class="form w-100" novalidate="novalidate" id="FrmLogin" action="<?= base_url('auth/login') ?>" method="post" data-kt-redirect-url="<?= base_url('dashboard') ?>">
+							<form class="form w-100" novalidate="novalidate" id="FrmLogin" action="<?= base_url('auth/login_prod') ?>" method="post" data-kt-redirect-url="<?= base_url('dashboard') ?>">
 								<!--begin::Heading-->
 								<div class="text-center mb-11">
 									<!--begin::Title-->

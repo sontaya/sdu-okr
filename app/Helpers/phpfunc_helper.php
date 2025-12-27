@@ -24,25 +24,39 @@ if(!function_exists('ldap_bind_authenticate'))
                     return $result[0];
                   }
 
+                  // Prevent anonymous bind / empty password
+                  if (empty(trim($pwd))) {
+                      log_message('error', "LDAP: Empty password attempt for user: $user");
+                      return null;
+                  }
+
                   if (@ldap_bind($auth_conn, $result[0]['dn'], $pwd)) {
+                      log_message('info', "LDAP: Bind SUCCESS for user: $user with DN: " . $result[0]['dn']);
                       return $result[0];
                   }else{
+                    log_message('error', "LDAP: Bind FAILED for user: $user with DN: " . $result[0]['dn']);
+                    // Get LDAP error for more context
+                    $ldapError = ldap_error($auth_conn);
+                    log_message('error', "LDAP Error: $ldapError");
                     return null;
                   }
 
                 }else{
+                  log_message('error', "LDAP: User found but no result entry for: $user");
                   return null;
                 }
+            } else {
+                log_message('error', "LDAP: Search failed or no user found for: $user");
             }
 
         }else{
           //--[Auth Fail]
-
+          log_message('error', "LDAP: Service account bind failed.");
           return null;
         }
 
       }
-
+      log_message('error', "LDAP: Connection failed.");
       return null;
     }
 }

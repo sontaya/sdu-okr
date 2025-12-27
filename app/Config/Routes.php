@@ -17,7 +17,8 @@ if (is_file(SYSTEMPATH . 'Config/Routes.php')) {
 $routes->get('/', 'AuthController::index');
 $routes->get('/demo', 'DemoController::index');
 $routes->get('login', 'AuthController::index');
-$routes->post('auth/login', 'AuthController::login');
+$routes->post('auth/login', 'AuthController::login_prod');
+$routes->post('auth/login_prod', 'AuthController::login_prod');
 $routes->get('auth/logout', 'AuthController::logout');
 $routes->get('redirect-after-login', 'AuthController::redirectAfterLogin');
 
