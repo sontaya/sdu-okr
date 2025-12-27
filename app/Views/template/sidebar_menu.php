@@ -271,6 +271,17 @@ echo "<!-- Debug: activeMenu = '$activeMenu' -->";
                             </a>
                         </div>
                         <!--end:Menu item Key Result Master-->
+
+                        <!--begin:Menu item Security Logs-->
+                        <div class="menu-item">
+                            <a class="menu-link <?= isMenuActive($activeMenu, 'admin-activity-logs') ? 'active' : '' ?>" href="<?= base_url('admin/activity-logs') ?>">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Security Logs</span>
+                            </a>
+                        </div>
+                        <!--end:Menu item Security Logs-->
                     </div>
                     <!--end:Menu sub-->
                 </div>

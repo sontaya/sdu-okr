@@ -122,6 +122,15 @@
     *   **Critical Fixes**: Resolved permission revocation bug where roles were not properly removed due to incorrect department ID targeting.
     *   **UX Enhancement**: Replaced browser native alerts with **SweetAlert2** for Grant/Revoke actions, ensuring smoother interaction and reliable page reloads.
     *   **Robustness**: Fixed eProfile search crash (Debug Toolbar conflict) by optimizing `AdminController` output handling.
+12. **Security Logs System Implementation** (Dec 26):
+    *   **Comprehensive Logging**: Implemented a centralized logging system capturing critical actions (Login, Logout, Failed Login, Permission Changes, User Creation/Updates, Key Result Management).
+    *   **Detailed Context**: Logs now include rich context such as Operator Name/ID, IP Address, User Agent, and specific action details (e.g., "Role 'Manager' granted to User X").
+    *   **Admin UI**: Created a dedicated **Security Logs Dashboard** (`/admin/activity-logs`) featuring:
+        *   DataTables with search and sorting.
+        *   Filtering by Event Type, Date Range, and User.
+        *   Visual Stats Cards (Total Logs, Today's Logins/Failures).
+        *   JSON Context Viewer for deep-dive investigation.
+    *   **Schema Enhancement**: Updated database schema to support extended logging metadata (`module`, `description`, `record_id`, `operator_info`).
 
 -----
 

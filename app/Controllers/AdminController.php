@@ -6,6 +6,7 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
+use App\Libraries\ActivityLogger;
 
 class AdminController extends TemplateController
 {
@@ -322,6 +323,17 @@ class AdminController extends TemplateController
                 $message .= ' พร้อมสิทธิ์: ' . implode(', ', array_map('getUserRoleNames', $rolesGranted));
             }
 
+            // Log Create User
+            $logger = new ActivityLogger();
+            $roleNames = implode(', ', $rolesGranted);
+            $operator = session('full_name') . ' (' . session('uid') . ')';
+            $description = "User {$newUserData['full_name']} ({$newUserData['uid']}) created in Department ID {$departmentId} with roles: $roleNames by $operator";
+            $logger->log('create_user', [
+                'target_user_id' => $userId,
+                'department_id' => $departmentId,
+                'roles' => $rolesGranted
+            ], null, $description, 'admin');
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => $message
@@ -340,6 +352,8 @@ class AdminController extends TemplateController
     public function grantRole()
     {
         if (!isAdminFast()) {
+            $description = "Unauthorized access attempt to grantRole by User ID " . session('user_id');
+            (new ActivityLogger())->log('unauthorized_access', ['action' => 'grantRole'], null, $description, 'security');
             return $this->response->setJSON(['success' => false, 'message' => 'ไม่มีสิทธิ์']);
         }
 
@@ -349,6 +363,17 @@ class AdminController extends TemplateController
         $departmentId = $this->request->getPost('department_id') ?? session('department');
 
         if (grantDepartmentRole($userId, $departmentId, $roleType)) {
+            // Log Grant Role
+            $roleName = getUserRoleNames($roleType);
+            $operator = session('full_name') . ' (' . session('uid') . ')';
+            $description = "Granted role '$roleName' ($roleType) to User ID $userId for Department ID $departmentId by $operator";
+            (new ActivityLogger())->log('permission_change', [
+                'action' => 'grant',
+                'target_user_id' => $userId,
+                'role' => $roleType,
+                'department_id' => $departmentId
+            ], null, $description, 'admin');
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'เพิ่มสิทธิ์ ' . getUserRoleNames($roleType) . ' สำเร็จ'
@@ -361,6 +386,8 @@ class AdminController extends TemplateController
     public function revokeRole()
     {
         if (!isAdminFast()) {
+            $description = "Unauthorized access attempt to revokeRole by User ID " . session('user_id');
+            (new ActivityLogger())->log('unauthorized_access', ['action' => 'revokeRole'], null, $description, 'security');
             return $this->response->setJSON(['success' => false, 'message' => 'ไม่มีสิทธิ์']);
         }
 
@@ -374,6 +401,17 @@ class AdminController extends TemplateController
         }
 
         if (revokeDepartmentRole($userId, $departmentId, $roleType)) {
+            // Log Revoke Role
+            $roleName = getUserRoleNames($roleType);
+            $operator = session('full_name') . ' (' . session('uid') . ')';
+            $description = "Revoked role '$roleName' ($roleType) from User ID $userId for Department ID $departmentId by $operator";
+            (new ActivityLogger())->log('permission_change', [
+                'action' => 'revoke',
+                'target_user_id' => $userId,
+                'role' => $roleType,
+                'department_id' => $departmentId
+            ], null, $description, 'admin');
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'เพิกถอนสิทธิ์ ' . getUserRoleNames($roleType) . ' สำเร็จ'
@@ -557,6 +595,16 @@ class AdminController extends TemplateController
             if (!empty($rolesGranted)) {
                 $message .= ' พร้อมสิทธิ์: ' . implode(', ', array_map('getUserRoleNames', $rolesGranted));
             }
+
+            // Log Update User
+            $roleNames = implode(', ', $rolesGranted);
+            $operator = session('full_name') . ' (' . session('uid') . ')';
+            $description = "User {$user['full_name']} updated. Department: $departmentId. Roles set: " . ($roleNames ?: 'None') . " by $operator";
+            (new ActivityLogger())->log('update_user', [
+                'target_user_id' => $userId,
+                'department_id' => $departmentId,
+                'roles' => $rolesGranted
+            ], null, $description, 'admin');
 
             return $this->response->setJSON([
                 'success' => true,

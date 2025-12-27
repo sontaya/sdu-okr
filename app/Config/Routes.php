@@ -28,6 +28,7 @@ $routes->group('admin', function($routes) {
     $routes->get('dashboard', 'AdminController::dashboard');
     $routes->get('manage-permissions', 'AdminController::managePermissions');
     $routes->get('system-stats', 'AdminController::systemStats');
+    $routes->get('activity-logs', 'ActivityLogController::index', ['namespace' => 'App\Controllers\Admin']);
 
     // Key Result Master Data
     $routes->group('keyresult', ['namespace' => 'App\Controllers\Admin'], function($routes) {

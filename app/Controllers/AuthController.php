@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use CodeIgniter\Controller;
+use App\Libraries\ActivityLogger;
 
 
 class AuthController extends BaseController
@@ -61,15 +62,31 @@ class AuthController extends BaseController
 
                 // ✅ เพิ่มส่วนนี้ - เรียก getRedirectUrlByRole และส่ง redirect_url กลับไป
                 $redirectUrl = $this->getRedirectUrlByRole($user['id'], $user['department_id']);
+
+                // Log Successful Login
+                $logger = new ActivityLogger();
+                $description = "User {$user['full_name']} ({$user['uid']}) logged in via LDAP";
+                $logger->log('login', ['method' => 'ldap'], $user['id'], $description, 'auth');
+
                 return $this->response->setJSON(['status' => 'success', 'redirect_url' => $redirectUrl]);
 
             } else {
+                // Log Failed Login (User not found locally after LDAP success)
+                $logger = new ActivityLogger();
+                $description = "Failed login: LDAP success for $username but user not found locally";
+                $logger->log('failed_login', ['username' => $username, 'reason' => 'LDAP success but user not found locally'], null, $description, 'auth');
+
                 return $this->response->setJSON([
                     'status' => 'error',
                     'message' => 'ไม่มีสิทธิการใช้งาน'
                 ]);
             }
         } else {
+            // Log Failed Login (LDAP fail)
+            $logger = new ActivityLogger();
+            $description = "Failed login: LDAP authentication failed for $username";
+            $logger->log('failed_login', ['username' => $username, 'reason' => 'LDAP authentication failed'], null, $description, 'auth');
+
             return $this->response->setJSON([
                 'status' => 'error',
                 'message' => 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
@@ -117,9 +134,19 @@ class AuthController extends BaseController
             $response = ['status' => 'success', 'redirect_url' => $redirectUrl];
             log_message('debug', '📤 Sending response: ' . json_encode($response));
 
+            // Log Successful Login
+            $logger = new ActivityLogger();
+            $description = "User {$user['full_name']} ({$user['uid']}) logged in via Local Dev";
+            $logger->log('login', ['method' => 'local_dev'], $user['id'], $description, 'auth');
+
             return $this->response->setJSON($response);
 
         } else {
+            // Log Failed Login
+            $logger = new ActivityLogger();
+            $description = "Failed login: User $username not found";
+            $logger->log('failed_login', ['username' => $username, 'reason' => 'User not found'], null, $description, 'auth');
+
             return $this->response->setJSON([
                 'status' => 'error',
                 'message' => 'ไม่พบผู้ใช้งาน'
@@ -187,6 +214,14 @@ class AuthController extends BaseController
 
     public function logout()
     {
+        // Log Logout
+        $logger = new ActivityLogger();
+        $user = session('full_name') ?? 'Unknown User';
+        $uid = session('uid') ?? 'Unknown';
+
+        $description = "User $user ($uid) logged out";
+        $logger->log('logout', [], session('user_id'), $description, 'auth');
+
         $session = session();
         $session->destroy();
 

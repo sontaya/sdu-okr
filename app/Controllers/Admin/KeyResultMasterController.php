@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\TemplateController;
 use CodeIgniter\API\ResponseTrait;
+use App\Libraries\ActivityLogger;
 
 class KeyResultMasterController extends TemplateController
 {
@@ -260,12 +261,14 @@ class KeyResultMasterController extends TemplateController
                 $data['updated_by'] = session('user_id');
                 $builder->where('id', $id)->update($data);
                 $message = 'แก้ไขข้อมูลสำเร็จ';
+                $action = 'update_key_result';
             } else {
                 // Insert
                 $data['created_by'] = session('user_id');
                 $builder->insert($data);
                 $id = $db->insertID();
                 $message = 'เพิ่มข้อมูลสำเร็จ';
+                $action = 'create_key_result';
             }
 
             // Handle Departments
@@ -301,6 +304,17 @@ class KeyResultMasterController extends TemplateController
                  return $this->fail('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             }
 
+            // Log the action
+            $operator = session('full_name') . ' (' . session('uid') . ')';
+            $verb = ($action == 'create_key_result') ? 'Created' : 'Updated';
+            $description = "$verb Key Result '{$data['name']}' (ID: $id). Year: {$data['key_result_year']} by $operator";
+
+            (new ActivityLogger())->log($action, [
+                'key_result_id' => $id,
+                'data' => $data,
+                'departments' => $batchData ?? []
+            ], null, $description, 'key_result_master');
+
             return $this->respond(['success' => true, 'message' => $message]);
         } catch (\Exception $e) {
             $db->transRollback();
@@ -315,7 +329,22 @@ class KeyResultMasterController extends TemplateController
         }
 
         try {
+            // Get name before delete for logging
+            $kr = $this->db->table('key_results')->select('name, key_result_year')->where('id', $id)->get()->getRowArray();
+            $name = $kr['name'] ?? 'Unknown';
+            $year = $kr['key_result_year'] ?? '';
+
             $this->db->table('key_results')->where('id', $id)->delete();
+
+            // Log Delete
+            $operator = session('full_name') . ' (' . session('uid') . ')';
+            $description = "Deleted Key Result '$name' (ID: $id, Year: $year) by $operator";
+            (new ActivityLogger())->log('delete_key_result', [
+                'key_result_id' => $id,
+                'name' => $name,
+                'year' => $year
+            ], null, $description, 'key_result_master');
+
             return $this->respondDeleted(['success' => true, 'message' => 'ลบข้อมูลสำเร็จ']);
         } catch (\Exception $e) {
             return $this->fail('ไม่สามารถลบข้อมูลได้ อาจมีการใช้งานอยู่');
